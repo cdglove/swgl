@@ -7,6 +7,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 #include "swgl/model.hpp"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -29,15 +30,32 @@ model::model(std::istream& in)
       for(int i = 0; i < 3; i++)
         iss >> v.raw[i];
       verts_.push_back(v);
-    } else if(!line.compare(0, 2, "f ")) {
-      std::vector<int> f;
-      int itrash, idx;
-      iss >> trash;
-      while(iss >> idx >> trash >> itrash >> trash >> itrash) {
-        idx--; // in wavefront obj all indices start at 1, not zero
-        f.push_back(idx);
+    }
+    else if(!line.compare(0, 2, "f ")) {
+      std::size_t slashes = std::count(line.begin(), line.end(), '/');
+      int first, second, third, itrash;
+      if(slashes == 0) {
+        if(!(iss >> trash >> first >> second >> third)) {
+          continue;
+        }
       }
-      faces_.push_back(f);
+      else if(slashes == 3) {
+        if(!(iss >> trash >> first >> trash >> itrash >> second >> trash >>
+             itrash >> third >> trash >> itrash)) {
+          continue;
+        }
+      }
+      else if(slashes == 6) {
+        if(!(iss >> trash >> first >> trash >> itrash >> trash >> itrash >>
+             second >> trash >> itrash >> trash >> itrash >> third >> trash >>
+             itrash >> trash >> itrash)) {
+          if(!(iss >> trash >> first >> trash >> trash >> itrash >> second >>
+               trash >> trash >> itrash >> third >> trash >> trash >> itrash)) {
+            continue;
+          }
+        }
+      }
+      faces_.push_back({first - 1, second - 1, third - 1});
     }
   }
   std::cerr << "# v# " << verts_.size() << " f# " << faces_.size() << std::endl;

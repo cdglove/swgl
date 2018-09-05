@@ -27,8 +27,7 @@ int main(int argc, char** argv) {
   swgl::image rt(width, height, swgl::image::RGB);
   swgl::pipeline p;
   p.draw(model, rt);
-
-
+  
   rt.flip_vertically(); // i want to have the origin at the left bottom
                         // corner of the image
   rt.write_tga_file("output.tga");
