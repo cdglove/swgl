@@ -11,8 +11,12 @@
 # Helper functions to add examples
 ##############################################################################
 function(add_swgl_example_target target_name target_file)
-    add_executable(${target_name} ${target_file})
-    target_link_libraries(${target_name} PRIVATE swgl)
+  add_executable(${target_name} ${target_file})
+  set(libgl libgl)
+  if(WIN32)
+    set(libgl OpenGL32)
+  endif()
+  target_link_libraries(${target_name} PRIVATE ${libgl} glfw swgl)
 endfunction()
 
 function(add_swgl_example target_file)

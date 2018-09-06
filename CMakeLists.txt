@@ -65,6 +65,14 @@ if(SWGL_BUILD_DOCS)
 endif()
 
 if(SWGL_BUILD_EXAMPLES)
+	##############################################################################
+	# Dependencies
+	##############################################################################
+	set(GLFW_BUILD_EXAMPLES OFF)
+	set(GLFW_BUILD_TESTS OFF)
+	set(GLFW_BUILD_DOCS OFF)
+	set(GLFW_INSTALL OFF)
+	add_subdirectory(${PROJECT_SOURCE_DIR}/contrib/glfw)
 	add_subdirectory(example)
 endif()
 

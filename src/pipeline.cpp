@@ -62,7 +62,7 @@ static void triangle(Vec2i t0, Vec2i t1, Vec2i t2, swgl::image& rt, TGAColor col
 
 namespace swgl {
 
-void pipeline::draw(model const& model, image& rt) const {
+void pipeline::draw_impl(model const& model, image& rt) const {
   Vec3f light_dir(0, 0, -1);
   int width = rt.get_width();
   int height = rt.get_height();

@@ -19,7 +19,12 @@ class model;
 
 class pipeline {
  public:
- 	void draw(model const& m, image& rt) const;
+  void draw(model const& m, image& rt) const {
+    draw_impl(m, rt);
+  }
+
+ private:
+  virtual void draw_impl(model const& m, image& rt) const;
 };
 
 } // namespace swgl
