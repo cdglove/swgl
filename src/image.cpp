@@ -283,14 +283,6 @@ TGAColor image::get(int x, int y) {
   return TGAColor(data + (x + y * width) * bytespp, bytespp);
 }
 
-bool image::set(int x, int y, TGAColor& c) {
-  if(!data || x < 0 || y < 0 || x >= width || y >= height) {
-    return false;
-  }
-  memcpy(data + (x + y * width) * bytespp, c.bgra, bytespp);
-  return true;
-}
-
 bool image::set(int x, int y, const TGAColor& c) {
   if(!data || x < 0 || y < 0 || x >= width || y >= height) {
     return false;
@@ -343,7 +335,7 @@ bool image::flip_vertically() {
   return true;
 }
 
-unsigned char* image::buffer() {
+unsigned char const* image::buffer() const {
   return data;
 }
 

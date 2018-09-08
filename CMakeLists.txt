@@ -50,6 +50,36 @@ set(SWGL_SOURCES
 )
 target_sources(swgl PUBLIC ${SWGL_HEADERS} PRIVATE ${SWGL_SOURCES})
 
+##############################################################################
+# Dependencies
+##############################################################################
+set(GLFW_BUILD_EXAMPLES OFF)
+set(GLFW_BUILD_TESTS OFF)
+set(GLFW_BUILD_DOCS OFF)
+set(GLFW_INSTALL OFF)
+add_subdirectory(${PROJECT_SOURCE_DIR}/contrib/glfw)
+
+# Create target for imgui
+add_library(imgui)
+target_sources(imgui PRIVATE
+	${PROJECT_SOURCE_DIR}/contrib/imgui/imgui.cpp
+	${PROJECT_SOURCE_DIR}/contrib/imgui/imgui_draw.cpp
+	${PROJECT_SOURCE_DIR}/contrib/imgui/imgui_widgets.cpp
+)
+
+target_include_directories(imgui PUBLIC ${PROJECT_SOURCE_DIR}/contrib/imgui)
+
+# Create tsarget for imgui glfw integration
+add_library(imgui_glfw2)
+target_sources(imgui_glfw2 PRIVATE
+	${PROJECT_SOURCE_DIR}/contrib/imgui/examples/imgui_impl_glfw.cpp
+	${PROJECT_SOURCE_DIR}/contrib/imgui/examples/imgui_impl_opengl2.cpp
+)
+target_include_directories(imgui_glfw2 PUBLIC ${PROJECT_SOURCE_DIR}/contrib/imgui/examples)
+#target_include_directories(imgui_glfw2 PUBLIC ${PROJECT_SOURCE_DIR}/contrib/imgui/examples/libs/gl3w)
+target_link_libraries(imgui_glfw2 PUBLIC imgui glfw)
+
+
 #
 #  HACK: have the files showing in the IDE, under the name 'moduleA_ide'
 #
@@ -65,14 +95,6 @@ if(SWGL_BUILD_DOCS)
 endif()
 
 if(SWGL_BUILD_EXAMPLES)
-	##############################################################################
-	# Dependencies
-	##############################################################################
-	set(GLFW_BUILD_EXAMPLES OFF)
-	set(GLFW_BUILD_TESTS OFF)
-	set(GLFW_BUILD_DOCS OFF)
-	set(GLFW_INSTALL OFF)
-	add_subdirectory(${PROJECT_SOURCE_DIR}/contrib/glfw)
 	add_subdirectory(example)
 endif()
 

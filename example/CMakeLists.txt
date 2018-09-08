@@ -16,15 +16,17 @@ function(add_swgl_example_target target_name target_file)
   if(WIN32)
     set(libgl OpenGL32)
   endif()
-  target_link_libraries(${target_name} PRIVATE ${libgl} glfw swgl)
+  target_link_libraries(${target_name} PRIVATE swgl imgui_glfw2 ${libgl})
 endfunction()
 
 function(add_swgl_example target_file)
   string(REPLACE "/" "." target_name ${target_file}) 
-  add_swgl_example_target(swgl.example.${target_name} "${target_file}.cpp")
+  set(full_target_name swgl.example.${target_name})
+  add_swgl_example_target(${full_target_name} "${target_file}.cpp" )
 endfunction()
 
 ##############################################################################
 # Examples
 ##############################################################################
 add_swgl_example(tinyrendertut)
+	

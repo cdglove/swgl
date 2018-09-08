@@ -11,6 +11,7 @@
 #pragma once
 
 #include "swgl/model.hpp"
+#include "swgl/image.hpp"
 
 namespace swgl {
 
@@ -24,6 +25,7 @@ class pipeline {
   }
 
  private:
+
   virtual void draw_impl(model const& m, image& rt) const;
 };
 

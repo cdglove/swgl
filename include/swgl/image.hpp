@@ -96,14 +96,13 @@ class image {
   bool flip_vertically();
   bool scale(int w, int h);
   TGAColor get(int x, int y);
-  bool set(int x, int y, TGAColor& c);
   bool set(int x, int y, const TGAColor& c);
   ~image();
   image& operator=(const image& img);
   int get_width();
   int get_height();
   int get_bytespp();
-  unsigned char* buffer();
+  unsigned char const* buffer() const;
   void clear();
  private:
   unsigned char* data;
