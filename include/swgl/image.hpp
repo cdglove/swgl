@@ -104,6 +104,7 @@ class image {
   int get_bytespp();
   unsigned char const* buffer() const;
   void clear();
+  void clear(TGAColor c);
  private:
   unsigned char* data;
   int width;

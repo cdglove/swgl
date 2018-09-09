@@ -343,6 +343,15 @@ void image::clear() {
   memset((void*)data, 0, width * height * bytespp);
 }
 
+void image::clear(TGAColor c) {
+    std::size_t k = 0;
+    for(std::size_t i = 0; i < width * height; ++i) {
+        for(std::size_t j = 0; j < bytespp; ++j) {
+            data[k++] = c[j];
+        }
+    }
+}
+
 bool image::scale(int w, int h) {
   if(w <= 0 || h <= 0 || !data)
     return false;
