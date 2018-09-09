@@ -32,7 +32,10 @@ struct Vec2 {
     return Vec2<t>(u - V.u, v - V.v);
   }
   Vec2<t> operator*(float f) const {
-    return Vec2<t>(u * f, v * f);
+    return Vec2<t>(static_cast<t>(u * f), static_cast<t>(v * f));
+  }
+  Vec2<t> operator*(t s) const {
+    return Vec2<t>(u * s, v * s);
   }
   t operator[](std::size_t i) const {
     return raw[i];
@@ -65,9 +68,7 @@ struct Vec3 {
       , y(_y)
       , z(_z) {
   }
-  Vec3<t> operator^(const Vec3<t>& v) const {
-    return Vec3<t>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
-  }
+
   Vec3<t> operator+(const Vec3<t>& v) const {
     return Vec3<t>(x + v.x, y + v.y, z + v.z);
   }
@@ -76,9 +77,6 @@ struct Vec3 {
   }
   Vec3<t> operator*(float f) const {
     return Vec3<t>(x * f, y * f, z * f);
-  }
-  t operator*(const Vec3<t>& v) const {
-    return x * v.x + y * v.y + z * v.z;
   }
   t operator[](std::size_t i) const {
     return raw[i];
@@ -100,8 +98,17 @@ struct Vec3 {
 template <typename T>
 Vec3<T> cross(Vec3<T> v1, Vec3<T> v2) {
   return Vec3<T>(
-      v1.y * v2.z - v1.z * v2.y, v1.x * v2.z - v1.z * v2.x,
-      v1.x * v2.y - v1.y * v2.x);
+      // clang-format off
+      v1.y * v2.z - v1.z * v2.y, 
+      v1.z * v2.x - v1.x * v2.z,
+      v1.x * v2.y - v1.y * v2.x
+      // clang-format on
+  );
+}
+
+template <typename T>
+T dot(Vec3<T> v1, Vec3<T> v2) {
+  return (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
 }
 
 typedef Vec2<float> Vec2f;

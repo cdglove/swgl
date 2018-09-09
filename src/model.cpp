@@ -72,7 +72,7 @@ int model::nfaces() const {
   return (int)faces_.size();
 }
 
-std::vector<int> model::face(int idx) const {
+triangle const& model::face(int idx) const {
   return faces_[idx];
 }
 

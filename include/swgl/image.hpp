@@ -9,83 +9,21 @@
 #ifndef SWGL_IMAGE_HPP
 #define SWGL_IMAGE_HPP
 
-#include <fstream>
-
-#pragma pack(push, 1)
-struct TGA_Header {
-  char idlength;
-  char colormaptype;
-  char datatypecode;
-  short colormaporigin;
-  short colormaplength;
-  char colormapdepth;
-  short x_origin;
-  short y_origin;
-  short width;
-  short height;
-  char bitsperpixel;
-  char imagedescriptor;
-};
-#pragma pack(pop)
-
-struct TGAColor {
-  unsigned char bgra[4];
-  unsigned char bytespp;
-
-  TGAColor()
-      : bgra()
-      , bytespp(1) {
-    for(int i = 0; i < 4; i++)
-      bgra[i] = 0;
-  }
-
-  TGAColor(
-      unsigned char R, unsigned char G, unsigned char B, unsigned char A = 255)
-      : bgra()
-      , bytespp(4) {
-    bgra[0] = B;
-    bgra[1] = G;
-    bgra[2] = R;
-    bgra[3] = A;
-  }
-
-  TGAColor(unsigned char v)
-      : bgra()
-      , bytespp(1) {
-    for(int i = 0; i < 4; i++)
-      bgra[i] = 0;
-    bgra[0] = v;
-  }
-
-  TGAColor(const unsigned char* p, unsigned char bpp)
-      : bgra()
-      , bytespp(bpp) {
-    for(int i = 0; i < (int)bpp; i++) {
-      bgra[i] = p[i];
-    }
-    for(int i = bpp; i < 4; i++) {
-      bgra[i] = 0;
-    }
-  }
-
-  unsigned char& operator[](const int i) {
-    return bgra[i];
-  }
-
-  TGAColor operator*(float intensity) const {
-    TGAColor res = *this;
-    intensity = (intensity > 1.f ? 1.f : (intensity < 0.f ? 0.f : intensity));
-    for(int i = 0; i < 4; i++)
-      res.bgra[i] = static_cast<char>(bgra[i] * intensity);
-    return res;
-  }
-};
+#include <iosfwd>
+#include <cassert>
+#include <cstdint>
+#include "swgl/colour.hpp"
 
 namespace swgl {
+
+template<typename T>
+class colour;
 
 class image {
  public:
   enum Format { GRAYSCALE = 1, RGB = 3, RGBA = 4 };
+
+  typedef colour<std::uint8_t> colour_type;
 
   image();
   image(int w, int h, int bpp);
@@ -95,24 +33,24 @@ class image {
   bool flip_horizontally();
   bool flip_vertically();
   bool scale(int w, int h);
-  TGAColor get(int x, int y);
-  bool set(int x, int y, const TGAColor& c);
+  colour_type get(int x, int y) const;
+  void set(int x, int y, colour_type const& c);
   ~image();
   image& operator=(const image& img);
-  int get_width();
-  int get_height();
-  int get_bytespp();
-  unsigned char const* buffer() const;
+  int width() const;
+  int height() const;
+  int bytespp() const;
+  unsigned char const* data() const;
   void clear();
-  void clear(TGAColor c);
+  void clear(colour_type const& c);
  private:
-  unsigned char* data;
-  int width;
-  int height;
-  int bytespp;
+  unsigned char* data_;
+  int width_;
+  int height_;
+  int bytespp_;
 
-  bool load_rle_data(std::ifstream& in);
-  bool unload_rle_data(std::ofstream& out);
+  bool load_rle_data(std::istream& in);
+  bool unload_rle_data(std::ostream& out);
 };
 
 } // namespace swgl

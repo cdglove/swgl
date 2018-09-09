@@ -1,3 +1,4 @@
+#include "swgl/colour.hpp"
 #include "swgl/image.hpp"
 #include "swgl/model.hpp"
 #include "swgl/pipeline.hpp"
@@ -9,15 +10,43 @@
 #include <GLFW/glfw3.h>
 
 #include <algorithm>
+#include <fstream>
 
-const TGAColor white = TGAColor(255, 255, 255, 255);
-const TGAColor red   = TGAColor(255, 0, 0, 255);
-const TGAColor green = TGAColor(0, 255, 0, 255);
+const swgl::colour<std::uint8_t> white =
+    swgl::colour<std::uint8_t>(255, 255, 255, 255);
+const swgl::colour<std::uint8_t> red =
+    swgl::colour<std::uint8_t>(255, 0, 0, 255);
+const swgl::colour<std::uint8_t> green =
+    swgl::colour<std::uint8_t>(0, 255, 0, 255);
+
+static std::vector<float> get_normalised_depth(
+    std::vector<float> const& depth) {
+  auto mm   = std::minmax_element(depth.begin(), depth.end());
+  float min = *mm.first;
+  float max = *mm.second;
+  float rng = max - min;
+  std::vector<float> depth_copy;
+  if(rng > 0.001f) {
+      depth_copy.resize(depth.size());
+    float rng_recip = 1.f / rng;
+    std::transform(
+        depth.begin(), depth.end(), depth_copy.begin(),
+        [min, rng_recip](float sample) {
+          return (sample - min) * rng_recip;
+        });
+    return depth_copy;
+  }
+
+    depth_copy = depth;
+    return depth_copy;
+
+}
 
 class application {
  public:
   application()
-      : rt_(width_, height_, swgl::image::RGB) {
+      : rt_(width_, height_, swgl::image::RGB)
+      , depth_(width_ * height_) {
     init_window_manager();
     init_imgui();
   }
@@ -46,10 +75,12 @@ class application {
     swgl::pipeline p;
 
     while(!glfwWindowShouldClose(window_)) {
-      rt_.clear(clear_colour_);
-      p.draw(model, rt_);
+      rt_.clear(swgl::colour_cast<std::uint8_t>(options_.clear_colour));
+      std::fill(depth_.begin(), depth_.end(), std::numeric_limits<float>::min());
+      swgl::pipeline_stats frame_stats;
+      frame_stats += p.draw(model, rt_, depth_);
       update_window_manager();
-      update_imgui();
+      update_imgui(frame_stats);
       present();
     }
 
@@ -80,6 +111,9 @@ class application {
     glfwSetWindowContentScaleCallback(
         window_, on_window_contents_scale_changed);
     glfwGetWindowContentScale(window_, &scalew_, &scaleh_);
+    width_  = static_cast<int>(width_ * scalew_);
+    height_ = static_cast<int>(height_ * scaleh_);
+    glfwSetWindowSize(window_, height_, width_);
   }
 
   void cleanup_window_manager() {
@@ -109,14 +143,13 @@ class application {
     ImGui::DestroyContext();
   }
 
-  void update_imgui() {
+  void update_imgui(swgl::pipeline_stats const& frame_stats) {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL2_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
     static bool show_demo_window    = true;
     static bool show_another_window = false;
-    static ImVec4 clear_colour       = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // 2. Show a simple window that we create ourselves. We use a Begin/End
     // pair to created a named window.
@@ -124,25 +157,25 @@ class application {
       static float f     = 0.0f;
       static int counter = 0;
 
-      ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!"
-                                     // and append into it.
+      ImGui::Begin("Options"); // Create a window called "Hello, world!"
+                               // and append into it.
 
       ImGui::Text("This is some useful text."); // Display some text (you can
                                                 // use a format strings too)
-      ImGui::Checkbox(
-          "Demo Window", &show_demo_window); // Edit bools storing our window
-                                             // open/close state
+
+      extern bool draw_barycentric;
+      ImGui::Checkbox("Draw Barycentric", &draw_barycentric);
+      ImGui::Combo(
+          "Display Buffer", &options_.visualize_buffer, "Colour\0Depth\0\0");
       ImGui::Checkbox("Another Window", &show_another_window);
 
       ImGui::SliderFloat(
           "float", &f, 0.0f,
           1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
+
       ImGui::ColorEdit3(
           "clear color",
-          (float*)&clear_colour); // Edit 3 floats representing a color
-      clear_colour_.bgra[0] = static_cast<char>(255 * clear_colour.x);
-      clear_colour_.bgra[1] = static_cast<char>(255 * clear_colour.y);
-      clear_colour_.bgra[2] = static_cast<char>(255 * clear_colour.z);
+          options_.clear_colour.data()); // Edit 3 floats representing a color
 
       if(ImGui::Button("Button")) { // Buttons return true when clicked (most
         // widgets return true when edited/activated)
@@ -150,25 +183,22 @@ class application {
       }
       ImGui::SameLine();
       ImGui::Text("counter = %d", counter);
-
-      ImGui::Text(
-          "Application average %.3f ms/frame (%.1f FPS)",
-          1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-      ImGui::End();
     }
 
-    // 3. Show another simple window.
-    if(show_another_window) {
-      ImGui::Begin(
-          "Another Window",
-          &show_another_window); // Pass a pointer to our bool variable (the
-                                 // window will have a closing button that
-                                 // will clear the bool when clicked)
-      ImGui::Text("Hello from another window!");
-      if(ImGui::Button("Close Me"))
-        show_another_window = false;
-      ImGui::End();
+    if(ImGui::CollapsingHeader("Draw Stats")) {
+      ImGui::Indent();
+      ImGui::Text("pixels = %d", frame_stats.pixel_count());
+      ImGui::Text("triangles = %d", frame_stats.triangle_count());
+      ImGui::Text("draws = %d", frame_stats.draw_count());
+      ImGui::Unindent();
     }
+
+    ImGui::Text(
+        "Application average %.3f ms/frame (%.1f FPS)",
+        1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::End();
+
+    //    ImGui::ShowDemoWindow();
 
     ImGui::Render();
   }
@@ -179,9 +209,18 @@ class application {
     // Because our image isn't 4 byte aligned at the start of each row.
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-    glDrawPixels(width_, height_, GL_RGB, GL_UNSIGNED_BYTE, rt_.buffer());
-    ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 
+    switch(options_.visualize_buffer) {
+    case 0:
+    default:
+      glDrawPixels(width_, height_, GL_RGB, GL_UNSIGNED_BYTE, rt_.data());
+      break;
+    case 1:
+      std::vector<float> depth_norm = get_normalised_depth(depth_);
+      glDrawPixels(width_, height_, GL_RED, GL_FLOAT, depth_norm.data());
+      break;
+    }
+    ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
     glfwSwapBuffers(window_);
   }
 
@@ -189,6 +228,7 @@ class application {
     width_  = width;
     height_ = height;
     rt_     = swgl::image(width, height, swgl::image::RGB);
+    depth_.resize(width * height);
     glViewport(0, 0, width_, height_);
   }
 
@@ -200,13 +240,18 @@ class application {
     ImGui::GetIO().FontGlobalScale = scale;
   }
 
-  int width_    = 1600;
-  int height_   = 1600;
+  int width_    = 800;
+  int height_   = 800;
   float scalew_ = 1.f;
   float scaleh_ = 1.f;
   swgl::image rt_;
-  TGAColor clear_colour_;
+  std::vector<float> depth_;
   GLFWwindow* window_;
+
+  struct options {
+    swgl::colour<float> clear_colour{0, 0, 0, 1};
+    int visualize_buffer{0};
+  } options_;
 };
 
 int main(int argc, char** argv) {

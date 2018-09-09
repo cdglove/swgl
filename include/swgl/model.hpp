@@ -10,10 +10,25 @@
 #define SWGL_MODEL_HPP
 
 #include "swgl/geometry.hpp"
-#include <vector>
+#include <array>
 #include <iosfwd>
+#include <vector>
 
 namespace swgl {
+
+class triangle {
+ public:
+  triangle(int a, int b, int c)
+      : indices_{a, b, c} {
+  }
+
+  int operator[](std::size_t idx) {
+    return indices_[idx];
+  }
+
+ private:
+  std::array<int, 3> indices_;
+};
 
 class model {
  public:
@@ -22,11 +37,11 @@ class model {
   int nverts() const;
   int nfaces() const;
   Vec3f vert(int i) const;
-  std::vector<int> face(int idx) const;
+  triangle const& face(int idx) const;
 
  private:
   std::vector<Vec3f> verts_;
-  std::vector<std::vector<int>> faces_;
+  std::vector<triangle> faces_;
 };
 
 } // namespace swgl
