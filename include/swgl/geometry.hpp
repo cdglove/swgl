@@ -25,6 +25,13 @@ struct Vec2 {
       : u(_u)
       , v(_v) {
   }
+
+  template <typename U>
+  explicit Vec2(Vec2<U> const& other)
+      : x(static_cast<t>(other.x))
+      , y(static_cast<t>(other.y)) {
+  }
+
   Vec2<t> operator+(const Vec2<t>& V) const {
     return Vec2<t>(u + V.u, v + V.v);
   }
@@ -33,9 +40,6 @@ struct Vec2 {
   }
   Vec2<t> operator*(float f) const {
     return Vec2<t>(static_cast<t>(u * f), static_cast<t>(v * f));
-  }
-  Vec2<t> operator*(t s) const {
-    return Vec2<t>(u * s, v * s);
   }
   t operator[](std::size_t i) const {
     return raw[i];
@@ -67,6 +71,13 @@ struct Vec3 {
       : x(_x)
       , y(_y)
       , z(_z) {
+  }
+
+  template <typename U>
+  explicit Vec3(Vec3<U> const& other)
+      : x(static_cast<t>(other.x))
+      , y(static_cast<t>(other.y))
+      , z(static_cast<t>(other.z)) {
   }
 
   Vec3<t> operator+(const Vec3<t>& v) const {

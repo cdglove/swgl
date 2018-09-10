@@ -58,47 +58,57 @@ static void draw_triangle_barycentric(
     swgl::image::colour_type colour,
     swgl::pipeline_stats& stats) {
   stats.increment_triangle_count();
-  swgl::bbox<int, 2> box(
-      Vec2i(static_cast<int>(tri[0].x), static_cast<int>(tri[0].y)));
-  box.expand(Vec2i(static_cast<int>(tri[1].x), static_cast<int>(tri[1].y)));
-  box.expand(Vec2i(static_cast<int>(tri[2].x), static_cast<int>(tri[2].y)));
-  box.clamp(Vec2i(0, 0), Vec2i(rt.width() - 1, rt.height() - 1));
+  swgl::bbox<float, 3> box(tri[0]);
+  box.expand(tri[1]);
+  box.expand(tri[2]);
+  box.clamp(
+      Vec3f(0.f, 0.f, 0.f), Vec3f(
+                                static_cast<float>(rt.width() - 1),
+                                static_cast<float>(rt.height() - 1), 0.f));
   auto bboxmin = box.min();
   auto bboxmax = box.max();
   Vec2i P;
-  for(P.x = bboxmin.x; P.x <= bboxmax.x; P.x++) {
-    for(P.y = bboxmin.y; P.y <= bboxmax.y; P.y++) {
+  for(P.x = static_cast<int>(bboxmin.x); P.x <= bboxmax.x; P.x++) {
+    for(P.y = static_cast<int>(bboxmin.y); P.y <= bboxmax.y; P.y++) {
       Vec3f bc_screen = barycentric(tri[0], tri[1], tri[2], P);
       if(bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0)
         continue;
       float Z = 0;
       for(int k = 0; k < 3; ++k)
         Z += tri[k].z * bc_screen[k];
-      if(Z > depth[P.y * rt.width() + P.x]) {
-        depth[P.y * rt.width() + P.x] = Z;
+      int depth_idx = static_cast<int>(P.y * rt.width() + P.x);
+      if(Z > depth[depth_idx]) {
+        depth[depth_idx] = Z;
         stats.increment_pixel_count();
-        rt.set(P.x, P.y, colour);
+        rt.set(static_cast<int>(P.x), static_cast<int>(P.y), colour);
       }
     }
   }
 }
 
 static void draw_triangle_segments(
-    std::array<Vec3f, 3> tri,
+    std::array<Vec3f, 3> tri_,
     swgl::image& rt,
     std::vector<float>& depth,
     swgl::image::colour_type colour,
     swgl::pipeline_stats& stats) {
   stats.increment_triangle_count();
+  std::array<Vec3i, 3> tri{Vec3i(tri_[0]), Vec3i(tri_[1]), Vec3i(tri_[2])};
   if(tri[0].y == tri[1].y && tri[0].y == tri[2].y)
     return; // i dont care about degenerate triangles
-  if(tri[0].y > tri[1].y)
+  if(tri[0].y > tri[1].y) {
     std::swap(tri[0], tri[1]);
-  if(tri[0].y > tri[2].y)
+    std::swap(tri_[0], tri_[1]);
+  }
+  if(tri[0].y > tri[2].y) {
     std::swap(tri[0], tri[2]);
-  if(tri[1].y > tri[2].y)
+    std::swap(tri_[0], tri_[2]);
+  }
+  if(tri[1].y > tri[2].y) {
     std::swap(tri[1], tri[2]);
-  int total_height = static_cast<int>(tri[2].y - tri[0].y);
+    std::swap(tri_[1], tri_[2]);
+  }
+  int total_height = tri[2].y - tri[0].y;
   int width        = rt.width();
   for(int i = 0; i < total_height; i++) {
     bool second_half   = i > tri[1].y - tri[0].y || tri[1].y == tri[0].y;
@@ -108,22 +118,24 @@ static void draw_triangle_segments(
     float beta  = (float)(i - (second_half ? tri[1].y - tri[0].y : 0)) /
                  segment_height; // be careful: with above conditions no
                                  // division by zero here
-    Vec3f A = tri[0] + (tri[2] - tri[0]) * alpha;
-    Vec3f B = second_half ? tri[1] + (tri[2] - tri[1]) * beta
-                          : tri[0] + (tri[1] - tri[0]) * beta;
+    Vec3i A = Vec3i(tri[0] + (tri[2] - tri[0]) * alpha);
+    Vec3i B = Vec3i(
+        second_half ? tri[1] + (tri[2] - tri[1]) * beta
+                    : tri[0] + (tri[1] - tri[0]) * beta);
     if(A.x > B.x)
       std::swap(A, B);
-    for(int j = static_cast<int>(A.x); j <= static_cast<int>(B.x); j++) {
+    for(int j = static_cast<int>(A.x); j <= B.x; j++) {
       Vec2i P(j, static_cast<int>(tri[0].y) + i);
-      Vec3f bc_screen = barycentric(tri[0], tri[1], tri[2], P);
+      Vec3f bc_screen = barycentric(tri_[0], tri_[1], tri_[2], P);
       float Z         = 0;
       for(int k = 0; k < 3; ++k)
-        Z += tri[k].z * bc_screen[k];
-      depth[i * width + j] = Z;
-      if(Z > depth[i * width + j]) {
+        Z += tri_[k].z * bc_screen[k];
+      int depth_idx = static_cast<int>(P.y * rt.width() + P.x);
+      if(Z > depth[depth_idx]) {
+        depth[depth_idx] = Z;
         stats.increment_pixel_count();
         rt.set(
-            j, static_cast<int>(tri[0].y + i),
+            j, static_cast<int>(tri[0].y) + i,
             colour); // attention, due to int casts t0.y+i != A.y
       }
     }
@@ -138,7 +150,8 @@ static Vec3f world_to_screen(Vec3f w, Vec2i half_screen) {
 
 bool draw_barycentric = false;
 namespace swgl {
-pipeline_stats pipeline::draw_impl(model const& model, image& rt, std::vector<float>& depth) const {
+pipeline_stats pipeline::draw_impl(
+    model const& model, image& rt, std::vector<float>& depth) const {
   pipeline_stats stats;
   stats.increment_draw_count();
   Vec3f light_dir(0, 0, -1);
@@ -157,8 +170,9 @@ pipeline_stats pipeline::draw_impl(model const& model, image& rt, std::vector<fl
           Vec3f((v.x + 1.f) * half_width, (v.y + 1.f) * half_height, v.z);
       world_coords[j] = v;
     }
-    Vec3f n = cross((world_coords[2] - world_coords[0]),
-              (world_coords[1] - world_coords[0]));
+    Vec3f n = cross(
+        (world_coords[2] - world_coords[0]),
+        (world_coords[1] - world_coords[0]));
     n.normalize();
     float intensity = dot(n, light_dir);
     if(intensity > 0) {
