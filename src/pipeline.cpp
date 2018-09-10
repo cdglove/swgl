@@ -40,16 +40,34 @@ static void line(
   }
 }
 
-static Vec3f barycentric(Vec3f t0, Vec3f t1, Vec3f t2, Vec2i P) {
-  Vec3f u = cross(
-      Vec3f(t2[0] - t0[0], t1[0] - t0[0], t0[0] - P[0]),
-      Vec3f(t2[1] - t0[1], t1[1] - t0[1], t0[1] - P[1]));
-  if(std::abs(u[2]) < 1) {
-    // Triangle is degenerate.
-    return Vec3f(-1, 1, 1);
-  }
-  return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
-}
+class barycentric_basis {
+public:
+	barycentric_basis(Vec3f t0, Vec3f t1, Vec3f t2)
+	: root_(t0)
+		, basis_{Vec3f(t2[0] - t0[0], t1[0] - t0[0], 0.f),
+		Vec3f(t2[1] - t0[1], t1[1] - t0[1], 0.f)} {
+	}
+
+	Vec3f compute(Vec2i P) const {
+		basis_[0].z = root_.x - P.x;
+		basis_[1].z = root_.y - P.y;
+
+		Vec3f u = cross(basis_[0], basis_[1]);
+
+		if(std::abs(u[2]) < 1) {
+			// triangle is degenerate.
+			return Vec3f(-1, 1, 1);
+		  }
+
+		  float zrecip = 1.f / u.z;
+		  return Vec3f(1.f - (u.x + u.y) * zrecip, u.y * zrecip, u.x * zrecip);
+	}
+
+private:
+
+	Vec3f root_;
+	mutable std::array<Vec3f, 2> basis_;
+};
 
 static void draw_triangle_barycentric(
     std::array<Vec3f, 3> const& tri,
@@ -66,9 +84,10 @@ static void draw_triangle_barycentric(
   auto bboxmin = box.min();
   auto bboxmax = box.max();
   Vec2i P;
+  barycentric_basis barycentric(tri[0], tri[1], tri[2]);
   for(P.x = static_cast<int>(bboxmin.x); P.x <= bboxmax.x; P.x++) {
     for(P.y = static_cast<int>(bboxmin.y); P.y <= bboxmax.y; P.y++) {
-      Vec3f bc_screen = barycentric(tri[0], tri[1], tri[2], P);
+      Vec3f bc_screen = barycentric.compute(P);
       if(bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0)
         continue;
       float Z = 0;
@@ -111,6 +130,7 @@ static void draw_triangle_segments(
   }
   int total_height = tri[2].y - tri[0].y;
   int width        = rt.width();
+  barycentric_basis barycentric(tri_[0], tri_[1], tri_[2]);
   for(int i = 0; i < total_height; i++) {
     bool second_half   = i > tri[1].y - tri[0].y || tri[1].y == tri[0].y;
     int segment_height = second_half ? static_cast<int>(tri[2].y - tri[1].y)
@@ -127,7 +147,7 @@ static void draw_triangle_segments(
       std::swap(A, B);
     for(int j = static_cast<int>(A.x); j <= B.x; j++) {
       Vec2i P(j, static_cast<int>(tri[0].y) + i);
-      Vec3f bc_screen = barycentric(tri_[0], tri_[1], tri_[2], P);
+      Vec3f bc_screen = barycentric.compute(P);
       float Z         = 0;
       for(int k = 0; k < 3; ++k)
         Z += tri_[k].z * bc_screen[k];
