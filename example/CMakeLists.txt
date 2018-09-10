@@ -12,7 +12,7 @@
 ##############################################################################
 function(add_swgl_example_target target_name target_file)
   add_executable(${target_name} ${target_file} ${PROJECT_SOURCE_DIR}/contrib/imgui/imgui_demo.cpp)
-  set(libgl libgl)
+  set(libgl GL)
   if(WIN32)
     set(libgl OpenGL32)
   endif()
@@ -20,7 +20,7 @@ function(add_swgl_example_target target_name target_file)
 endfunction()
 
 function(add_swgl_example target_file)
-  string(REPLACE "/" "." target_name ${target_file}) 
+  string(REPLACE "/" "." target_name ${target_file})
   set(full_target_name swgl.example.${target_name})
   add_swgl_example_target(${full_target_name} "${target_file}.cpp")
 endfunction()
@@ -30,4 +30,4 @@ endfunction()
 ##############################################################################
 add_swgl_example(tinyrendertut)
 
-	
+

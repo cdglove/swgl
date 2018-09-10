@@ -45,8 +45,8 @@ static Vec3f barycentric(Vec3f t0, Vec3f t1, Vec3f t2, Vec2i P) {
       Vec3f(t2[0] - t0[0], t1[0] - t0[0], t0[0] - P[0]),
       Vec3f(t2[1] - t0[1], t1[1] - t0[1], t0[1] - P[1]));
   if(std::abs(u[2]) < 1) {
-    return Vec3f(-1, 1, 1); // triangle is degenerate, in this case return smth
-                            // with negative coordinates
+    // Triangle is degenerate.
+    return Vec3f(-1, 1, 1);
   }
   return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
 }
@@ -74,7 +74,6 @@ static void draw_triangle_barycentric(
       float Z = 0;
       for(int k = 0; k < 3; ++k)
         Z += tri[k].z * bc_screen[k];
-      assert(Z > 0);
       int depth_idx = static_cast<int>(P.y * rt.width() + P.x);
       if(Z > depth[depth_idx]) {
         depth[depth_idx] = Z;
@@ -93,8 +92,11 @@ static void draw_triangle_segments(
     swgl::pipeline_stats& stats) {
   stats.increment_triangle_count();
   std::array<Vec3i, 3> tri{Vec3i(tri_[0]), Vec3i(tri_[1]), Vec3i(tri_[2])};
-  if(tri[0].y == tri[1].y && tri[0].y == tri[2].y)
-    return; // i dont care about degenerate triangles
+  if(tri[0].y == tri[1].y && tri[0].y == tri[2].y) {
+    // Triangle is degenerate.
+    return;
+  }
+
   if(tri[0].y > tri[1].y) {
     std::swap(tri[0], tri[1]);
     std::swap(tri_[0], tri_[1]);
