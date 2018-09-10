@@ -87,7 +87,8 @@ struct Vec3 {
     return Vec3<t>(x - v.x, y - v.y, z - v.z);
   }
   Vec3<t> operator*(float f) const {
-    return Vec3<t>(x * f, y * f, z * f);
+    return Vec3<t>(
+        static_cast<t>(x * f), static_cast<t>(y * f), static_cast<t>(z * f));
   }
   t operator[](std::size_t i) const {
     return raw[i];

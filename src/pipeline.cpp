@@ -62,9 +62,7 @@ static void draw_triangle_barycentric(
   box.expand(tri[1]);
   box.expand(tri[2]);
   box.clamp(
-      Vec3f(0.f, 0.f, 0.f), Vec3f(
-                                static_cast<float>(rt.width() - 1),
-                                static_cast<float>(rt.height() - 1), 0.f));
+      Vec3f(0.f, 0.f, 0.f), Vec3f(Vec3i(rt.width() - 1, rt.height() - 1, 0)));
   auto bboxmin = box.min();
   auto bboxmax = box.max();
   Vec2i P;
@@ -76,6 +74,7 @@ static void draw_triangle_barycentric(
       float Z = 0;
       for(int k = 0; k < 3; ++k)
         Z += tri[k].z * bc_screen[k];
+      assert(Z > 0);
       int depth_idx = static_cast<int>(P.y * rt.width() + P.x);
       if(Z > depth[depth_idx]) {
         depth[depth_idx] = Z;

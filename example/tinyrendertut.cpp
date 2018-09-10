@@ -21,25 +21,27 @@ const swgl::colour<std::uint8_t> green =
 
 static std::vector<float> get_normalised_depth(
     std::vector<float> const& depth) {
-  auto mm   = std::minmax_element(depth.begin(), depth.end());
-  float min = *mm.first;
-  float max = *mm.second;
+  float min = std::numeric_limits<float>::max();
+  float max = -std::numeric_limits<float>::max();
+  for(float f : depth) {
+    if(f != -std::numeric_limits<float>::max()) {
+      min = std::min(f, min);
+      max = std::max(f, max);
+    }
+  }
   float rng = max - min;
   std::vector<float> depth_copy;
   if(rng > 0.001f) {
-      depth_copy.resize(depth.size());
+    depth_copy.resize(depth.size());
     float rng_recip = 1.f / rng;
     std::transform(
         depth.begin(), depth.end(), depth_copy.begin(),
-        [min, rng_recip](float sample) {
-          return (sample - min) * rng_recip;
-        });
+        [min, rng_recip](float sample) { return (sample - min) * rng_recip; });
     return depth_copy;
   }
 
-    depth_copy = depth;
-    return depth_copy;
-
+  depth_copy = depth;
+  return depth_copy;
 }
 
 class application {
@@ -57,6 +59,7 @@ class application {
   }
 
   int run(int argc, char** argv) {
+
     char const* file = nullptr;
     if(2 == argc) {
       file = argv[1];
@@ -76,7 +79,8 @@ class application {
 
     while(!glfwWindowShouldClose(window_)) {
       rt_.clear(swgl::colour_cast<std::uint8_t>(options_.clear_colour));
-      std::fill(depth_.begin(), depth_.end(), std::numeric_limits<float>::min());
+      std::fill(
+          depth_.begin(), depth_.end(), -std::numeric_limits<float>::max());
       swgl::pipeline_stats frame_stats;
       frame_stats += p.draw(model, rt_, depth_);
       update_window_manager();

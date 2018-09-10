@@ -38,7 +38,10 @@ class pipeline_stats {
   pipeline_stats()
       : num_pixels_(0)
       , num_triangles_(0)
-      , num_draws_(0) {
+      , num_draws_(0)
+      //, min_depth_(0)
+      //, max_depth_(0) 
+  {
   }
 
   void increment_pixel_count() {
@@ -53,10 +56,15 @@ class pipeline_stats {
     SWGL_PIPELINE_STAT(++num_draws_);
   }
 
-  void record_depth(float depth) {
-    SWGL_PIPELINE_STAT((max_depth_ = std::max(max_depth_, depth)));
-    SWGL_PIPELINE_STAT((min_depth_ = std::max(min_depth_, depth)));
-  }
+  //void init_depth(float depth) {
+  //    max_depth_ = depth;
+  //    min_depth_ = depth;
+  //}
+
+  //void record_depth(float depth) {
+  //  SWGL_PIPELINE_STAT((max_depth_ = std::max(max_depth_, depth)));
+  //  SWGL_PIPELINE_STAT((min_depth_ = std::max(min_depth_, depth)));
+  //}
 
   int pixel_count() const {
     return SWGL_ENABLE_PIPELINE_STATS ? num_pixels_ : 0;
@@ -70,13 +78,13 @@ class pipeline_stats {
     return SWGL_ENABLE_PIPELINE_STATS ? num_draws_ : 0;
   }
 
-  float max_depth() const {
-    return max_depth_;
-  }
+  //float max_depth() const {
+  //  return max_depth_;
+  //}
 
-  float min_depth() const {
-    return min_depth_;
-  }
+  //float min_depth() const {
+  //  return min_depth_;
+  //}
 
   pipeline_stats& operator+=(pipeline_stats const& other) {
 #if SWGL_ENABLE_PIPELINE_STATS
@@ -91,8 +99,8 @@ class pipeline_stats {
   int num_pixels_;
   int num_triangles_;
   int num_draws_;
-  float max_depth_;
-  float min_depth_;
+  //float max_depth_;
+  //float min_depth_;
 };
 
 class pipeline {
