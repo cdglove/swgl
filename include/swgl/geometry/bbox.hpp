@@ -39,11 +39,24 @@ class bbox {
       , max_(p) {
   }
 
-  bbox(dimension_type first, dimension_type second) {
+  bbox(dimension_type const* points, std::size_t num_points) {
+	  for(std::size_t i = 0; i < Dimension; ++i) {
+		auto min_max = std::minmax_element(points, points + num_points, 
+			[&i](dimension_type const& a, dimension_type const& b) {
+				return a[i] < b[i];
+		});
+		min_[i] = (*min_max.first)[i];
+		max_[i] = (*min_max.second)[i];
+	  }
+  }
+
+  bbox(dimension_type min, dimension_type max) {
     for(std::size_t i = 0; i < Dimension; ++i) {
-      min_[i] = std::max(first[i], second[i]);
-      max_[i] = std::min(first[i], second[i]);
+      assert(first[i] <= second[i]);
     }
+
+	min_ = min;
+	max_ = max;
   }
 
   void expand(dimension_type p) {
