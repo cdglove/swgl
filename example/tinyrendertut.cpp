@@ -92,7 +92,7 @@ class application {
 
     file = argv[1];
 
-    swgl::model model = load_model(file);
+    swgl::model model   = load_model(file);
     swgl::image diffuse = load_texture(file, "_diffuse.tga");
     swgl::pipeline p;
     p.set_depth(depth_);
@@ -105,6 +105,19 @@ class application {
           depth_.begin(), depth_.end(), -std::numeric_limits<float>::max());
       swgl::pipeline_counters frame_counters;
       frame_counters += p.draw();
+
+      //   for(int i = 0; i < rt_.width(); ++i) {
+      //     for(int j = 0; j < rt_.height(); ++j) {
+      //       swgl::image::colour_type c = rt_.get(i, j);
+      //       for(int k = 0; k < 3; ++k) {
+      // auto f = swgl::colour_cast<float>(c);
+      //         f[k] = std::pow(f[k], 2.2f);
+      // c = swgl::colour_cast<std::uint8_t>(f);
+      //         rt_.set(i, j, c);
+      //       }
+      //     }
+      //   }
+
       update_window_manager();
       update_imgui(frame_counters);
       present();
