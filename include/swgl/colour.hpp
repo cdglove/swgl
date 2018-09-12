@@ -98,6 +98,16 @@ template <typename Target, typename Source>
 colour<Target> colour_cast(colour<Source> const&);
 
 template <>
+inline colour<std::uint8_t> colour_cast(colour<std::uint8_t> const& c) {
+    return c;
+}
+
+template <>
+inline colour<float> colour_cast(colour<float> const& c) {
+    return c;
+}
+
+template <>
 inline colour<std::uint8_t> colour_cast(colour<float> const& source) {
   return colour<std::uint8_t>(
       static_cast<std::uint8_t>(source.r() * 255),

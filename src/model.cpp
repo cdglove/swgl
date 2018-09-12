@@ -32,7 +32,7 @@ model::model(std::istream& in) {
       positions_.push_back(v);
     }
     else if(!line.compare(0, 3, "vt ")) {
-        iss >> trash;
+        iss >> trash >> trash;
         Vec2f uv;
         if(iss >> uv.u >> uv.v >> ftrash)
             uvs_.push_back(uv);
@@ -84,6 +84,10 @@ triangle const& model::face(int idx) const {
 
 Vec3f model::position(int i) const {
   return positions_[i];
+}
+
+Vec2f model::uv(int i) const {
+  return uvs_[i];
 }
 
 } // namespace swgl

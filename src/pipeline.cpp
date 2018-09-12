@@ -96,6 +96,7 @@ pipeline_counters pipeline::draw_impl() const {
       screen_coords[j] =
           Vec3f((v.x + 1.f) * ri.half_width, (v.y + 1.f) * ri.half_height, v.z);
       world_coords[j] = v;
+      uv_coords[j] = model.uv(face[j]);
     }
     Vec3f n = cross(
         (world_coords[2] - world_coords[0]),
