@@ -76,11 +76,9 @@ static void draw_triangle_barycentric(
     swgl::image::colour_type colour,
     swgl::pipeline_stats& stats) {
   stats.increment_triangle_count();
-  swgl::bbox<float, 3> box(tri[0]);
-  box.expand(tri[1]);
-  box.expand(tri[2]);
+  swgl::bbox<float, 3> box(tri.data(), tri.size());
   box.clamp(
-      Vec3f(0.f, 0.f, 0.f), Vec3f(Vec3i(rt.width() - 1, rt.height() - 1, 0)));
+      Vec3f(0.f, 0.f, 0.f), Vec3f(rt.width() - 1.f, rt.height() - 1.f, 0.f));
   auto bboxmin = box.min();
   auto bboxmax = box.max();
   Vec2i P;

@@ -10,6 +10,8 @@
 #define SWGL_GEOMETRY_BBOX_HPP
 #pragma once
 
+#include <algorithm>
+
 namespace swgl {
 
 namespace detail {
