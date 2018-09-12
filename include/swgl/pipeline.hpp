@@ -33,15 +33,12 @@ namespace swgl {
 class image;
 class model;
 
-class pipeline_stats {
+class pipeline_counters {
  public:
-  pipeline_stats()
+  pipeline_counters()
       : num_pixels_(0)
       , num_triangles_(0)
-      , num_draws_(0)
-      //, min_depth_(0)
-      //, max_depth_(0) 
-  {
+      , num_draws_(0) {
   }
 
   void increment_pixel_count() {
@@ -56,16 +53,6 @@ class pipeline_stats {
     SWGL_PIPELINE_STAT(++num_draws_);
   }
 
-  //void init_depth(float depth) {
-  //    max_depth_ = depth;
-  //    min_depth_ = depth;
-  //}
-
-  //void record_depth(float depth) {
-  //  SWGL_PIPELINE_STAT((max_depth_ = std::max(max_depth_, depth)));
-  //  SWGL_PIPELINE_STAT((min_depth_ = std::max(min_depth_, depth)));
-  //}
-
   int pixel_count() const {
     return SWGL_ENABLE_PIPELINE_STATS ? num_pixels_ : 0;
   }
@@ -78,15 +65,7 @@ class pipeline_stats {
     return SWGL_ENABLE_PIPELINE_STATS ? num_draws_ : 0;
   }
 
-  //float max_depth() const {
-  //  return max_depth_;
-  //}
-
-  //float min_depth() const {
-  //  return min_depth_;
-  //}
-
-  pipeline_stats& operator+=(pipeline_stats const& other) {
+  pipeline_counters& operator+=(pipeline_counters const& other) {
 #if SWGL_ENABLE_PIPELINE_STATS
     num_pixels_ += other.num_pixels_;
     num_triangles_ += other.num_triangles_;
@@ -99,20 +78,56 @@ class pipeline_stats {
   int num_pixels_;
   int num_triangles_;
   int num_draws_;
-  //float max_depth_;
-  //float min_depth_;
 };
 
 class pipeline {
  public:
-  pipeline_stats draw(
-      model const& m, image& rt, std::vector<float>& depth) const {
-    return draw_impl(m, rt, depth);
+  pipeline_counters draw() const {
+    return draw_impl();
   }
 
+  void set_model(model const& model) {
+    model_ = &model;
+  }
+
+  void set_depth(std::vector<float>& depth) {
+    depth_ = &depth;
+  }
+
+  void set_texture(std::size_t idx, image const& texture) {
+    textures_.resize(std::max(idx+1, textures_.size()));
+    textures_[idx] = &texture;
+  }
+
+  void set_render_target(image& rt) {
+    rt_ = &rt;
+  }
+
+ protected:
+  template <typename T>
+  using face_t = std::array<T, 3>;
+
+  struct raster_info {
+    int width;
+    int height;
+    int half_width;
+    int half_height;
+  };
+
+  void draw_triangle(
+      raster_info const& ri,
+      face_t<Vec3f> const& tri,
+      face_t<Vec2f> uvs,
+      colour<float> light,
+      pipeline_counters& stats) const;
+
  private:
-  virtual pipeline_stats draw_impl(
-      model const& m, image& rt, std::vector<float>& depth) const;
+  model const* model_;
+  std::vector<float>* depth_;
+  std::vector<image const*> textures_;
+  image* rt_;
+
+  virtual pipeline_counters draw_impl() const;
 };
 
 } // namespace swgl

@@ -41,41 +41,84 @@ static void line(
 }
 
 class barycentric_basis {
-public:
-	barycentric_basis(Vec3f t0, Vec3f t1, Vec3f t2)
-	: root_(t0)
-		, basis_{Vec3f(t2[0] - t0[0], t1[0] - t0[0], 0.f),
-		Vec3f(t2[1] - t0[1], t1[1] - t0[1], 0.f)} {
-	}
+ public:
+  barycentric_basis(Vec3f t0, Vec3f t1, Vec3f t2)
+      : root_(t0)
+      , basis_{Vec3f(t2[0] - t0[0], t1[0] - t0[0], 0.f),
+               Vec3f(t2[1] - t0[1], t1[1] - t0[1], 0.f)} {
+  }
 
-	Vec3f compute(Vec2i P) const {
-		basis_[0].z = root_.x - P.x;
-		basis_[1].z = root_.y - P.y;
+  Vec3f compute(Vec2i P) const {
+    basis_[0].z = root_.x - P.x;
+    basis_[1].z = root_.y - P.y;
 
-		Vec3f u = cross(basis_[0], basis_[1]);
+    Vec3f u = cross(basis_[0], basis_[1]);
 
-		if(std::abs(u[2]) < 1) {
-			// triangle is degenerate.
-			return Vec3f(-1, 1, 1);
-		  }
+    if(std::abs(u[2]) < 1) {
+      // triangle is degenerate.
+      return Vec3f(-1, 1, 1);
+    }
 
-		  float zrecip = 1.f / u.z;
-		  return Vec3f(1.f - (u.x + u.y) * zrecip, u.y * zrecip, u.x * zrecip);
-	}
+    float zrecip = 1.f / u.z;
+    return Vec3f(1.f - (u.x + u.y) * zrecip, u.y * zrecip, u.x * zrecip);
+  }
 
-private:
-
-	Vec3f root_;
-	mutable std::array<Vec3f, 2> basis_;
+ private:
+  Vec3f root_;
+  mutable std::array<Vec3f, 2> basis_;
 };
 
-static void draw_triangle_barycentric(
-    std::array<Vec3f, 3> const& tri,
-    swgl::image& rt,
-    std::vector<float>& depth,
-    swgl::image::colour_type colour,
-    swgl::pipeline_stats& stats) {
+static Vec3f world_to_screen(Vec3f w, Vec2i half_screen) {
+  return Vec3f(
+      std::round((w.x + 1.f) * half_screen.x),
+      std::round((w.y + 1.f) * half_screen.y), w.z);
+}
+
+namespace swgl {
+pipeline_counters pipeline::draw_impl() const {
+  pipeline_counters stats;
+  stats.increment_draw_count();
+  Vec3f light_dir(0, 0, -1);
+  raster_info ri;
+  ri.width           = rt_->width();
+  ri.height          = rt_->height();
+  ri.half_width      = ri.width / 2;
+  ri.half_height     = ri.height / 2;
+  model const& model = *model_;
+  typedef swgl::image::colour_type::component_type colour_type;
+  for(int i = 0; i < model.nfaces(); i++) {
+    triangle face = model.face(i);
+    face_t<Vec3f> screen_coords;
+    face_t<Vec3f> world_coords;
+    face_t<Vec2f> uv_coords;
+    for(int j = 0; j < 3; j++) {
+      Vec3f v = model.position(face[j]);
+      screen_coords[j] =
+          Vec3f((v.x + 1.f) * ri.half_width, (v.y + 1.f) * ri.half_height, v.z);
+      world_coords[j] = v;
+      uv_coords[j] = model.uv(face[j]);
+    }
+    Vec3f n = cross(
+        (world_coords[2] - world_coords[0]),
+        (world_coords[1] - world_coords[0]));
+    n.normalize();
+    float intensity = dot(n, light_dir);
+    if(intensity > 0) {
+      swgl::colour<float> light(intensity, intensity, intensity, 0.f);
+      draw_triangle(ri, screen_coords, uv_coords, light, stats);
+    }
+  }
+  return stats;
+}
+
+void pipeline::draw_triangle(
+    raster_info const& ri,
+    face_t<Vec3f> const& tri,
+    face_t<Vec2f> uvs,
+    colour<float> light,
+    pipeline_counters& stats) const {
   stats.increment_triangle_count();
+  auto& depth = *depth_;
   swgl::bbox<float, 3> box(tri.data(), tri.size());
   box.clamp(
       Vec3f(0.f, 0.f, 0.f), Vec3f(rt.width() - 1.f, rt.height() - 1.f, 0.f));
@@ -89,127 +132,25 @@ static void draw_triangle_barycentric(
       if(bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0)
         continue;
       float Z = 0;
-      for(int k = 0; k < 3; ++k)
+      Vec2f UV{0, 0};
+      for(int k = 0; k < 3; ++k) {
         Z += tri[k].z * bc_screen[k];
-      int depth_idx = static_cast<int>(P.y * rt.width() + P.x);
+        UV = UV + (uvs[k] * bc_screen[k]);
+      }
+      int depth_idx = static_cast<int>(P.y * ri.width + P.x);
       if(Z > depth[depth_idx]) {
         depth[depth_idx] = Z;
         stats.increment_pixel_count();
-        rt.set(static_cast<int>(P.x), static_cast<int>(P.y), colour);
+        // Invoke pixel shader.
+        swgl::image::colour_type albedo =
+            textures_[0]->sample(UV.u, UV.v);
+        colour<float> lighted = light * colour_cast<float>(albedo);
+        rt_->set(
+            static_cast<int>(P.x), static_cast<int>(P.y),
+            colour_cast<std::uint8_t>(lighted));
       }
     }
   }
-}
-
-static void draw_triangle_segments(
-    std::array<Vec3f, 3> tri_,
-    swgl::image& rt,
-    std::vector<float>& depth,
-    swgl::image::colour_type colour,
-    swgl::pipeline_stats& stats) {
-  stats.increment_triangle_count();
-  std::array<Vec3i, 3> tri{Vec3i(tri_[0]), Vec3i(tri_[1]), Vec3i(tri_[2])};
-  if(tri[0].y == tri[1].y && tri[0].y == tri[2].y) {
-    // Triangle is degenerate.
-    return;
-  }
-
-  if(tri[0].y > tri[1].y) {
-    std::swap(tri[0], tri[1]);
-    std::swap(tri_[0], tri_[1]);
-  }
-  if(tri[0].y > tri[2].y) {
-    std::swap(tri[0], tri[2]);
-    std::swap(tri_[0], tri_[2]);
-  }
-  if(tri[1].y > tri[2].y) {
-    std::swap(tri[1], tri[2]);
-    std::swap(tri_[1], tri_[2]);
-  }
-  int total_height = tri[2].y - tri[0].y;
-  int width        = rt.width();
-  barycentric_basis barycentric(tri_[0], tri_[1], tri_[2]);
-  for(int i = 0; i < total_height; i++) {
-    bool second_half   = i > tri[1].y - tri[0].y || tri[1].y == tri[0].y;
-    int segment_height = second_half ? static_cast<int>(tri[2].y - tri[1].y)
-                                     : static_cast<int>(tri[1].y - tri[0].y);
-    float alpha = (float)i / total_height;
-    float beta  = (float)(i - (second_half ? tri[1].y - tri[0].y : 0)) /
-                 segment_height; // be careful: with above conditions no
-                                 // division by zero here
-    Vec3i A = Vec3i(tri[0] + (tri[2] - tri[0]) * alpha);
-    Vec3i B = Vec3i(
-        second_half ? tri[1] + (tri[2] - tri[1]) * beta
-                    : tri[0] + (tri[1] - tri[0]) * beta);
-    if(A.x > B.x)
-      std::swap(A, B);
-    for(int j = static_cast<int>(A.x); j <= B.x; j++) {
-      Vec2i P(j, static_cast<int>(tri[0].y) + i);
-      Vec3f bc_screen = barycentric.compute(P);
-      float Z         = 0;
-      for(int k = 0; k < 3; ++k)
-        Z += tri_[k].z * bc_screen[k];
-      int depth_idx = static_cast<int>(P.y * rt.width() + P.x);
-      if(Z > depth[depth_idx]) {
-        depth[depth_idx] = Z;
-        stats.increment_pixel_count();
-        rt.set(
-            j, static_cast<int>(tri[0].y) + i,
-            colour); // attention, due to int casts t0.y+i != A.y
-      }
-    }
-  }
-}
-
-static Vec3f world_to_screen(Vec3f w, Vec2i half_screen) {
-  return Vec3f(
-      std::round((w.x + 1.f) * half_screen.x),
-      std::round((w.y + 1.f) * half_screen.y), w.z);
-}
-
-bool draw_barycentric = false;
-namespace swgl {
-pipeline_stats pipeline::draw_impl(
-    model const& model, image& rt, std::vector<float>& depth) const {
-  pipeline_stats stats;
-  stats.increment_draw_count();
-  Vec3f light_dir(0, 0, -1);
-  int width       = rt.width();
-  int height      = rt.height();
-  int half_width  = width / 2;
-  int half_height = height / 2;
-  typedef swgl::image::colour_type::component_type colour_type;
-  for(int i = 0; i < model.nfaces(); i++) {
-    triangle face = model.face(i);
-    std::array<Vec3f, 3> screen_coords;
-    std::array<Vec3f, 3> world_coords;
-    for(int j = 0; j < 3; j++) {
-      Vec3f v = model.vert(face[j]);
-      screen_coords[j] =
-          Vec3f((v.x + 1.f) * half_width, (v.y + 1.f) * half_height, v.z);
-      world_coords[j] = v;
-    }
-    Vec3f n = cross(
-        (world_coords[2] - world_coords[0]),
-        (world_coords[1] - world_coords[0]));
-    n.normalize();
-    float intensity = dot(n, light_dir);
-    if(intensity > 0) {
-      swgl::colour<float> output(intensity, intensity, intensity, 0.f);
-      if(draw_barycentric) {
-        draw_triangle_barycentric(
-            screen_coords, rt, depth, swgl::colour_cast<colour_type>(output),
-            stats);
-      }
-      else {
-        draw_triangle_segments(
-            screen_coords, rt, depth, swgl::colour_cast<colour_type>(output),
-            stats);
-      }
-    }
-  }
-
-  return stats;
-}
+} // namespace swgl
 
 } // namespace swgl

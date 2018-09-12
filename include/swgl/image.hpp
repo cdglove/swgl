@@ -34,6 +34,7 @@ class image {
   bool flip_vertically();
   bool scale(int w, int h);
   colour_type get(int x, int y) const;
+  colour_type sample(float u, float v) const;
   void set(int x, int y, colour_type const& c);
   ~image();
   image& operator=(const image& img);

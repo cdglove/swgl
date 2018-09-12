@@ -36,11 +36,13 @@ class model {
   ~model();
   int nverts() const;
   int nfaces() const;
-  Vec3f vert(int i) const;
+  Vec3f position(int i) const;
+  Vec2f uv(int i) const;
   triangle const& face(int idx) const;
 
  private:
-  std::vector<Vec3f> verts_;
+  std::vector<Vec3f> positions_;
+  std::vector<Vec2f> uvs_;
   std::vector<triangle> faces_;
 };
 

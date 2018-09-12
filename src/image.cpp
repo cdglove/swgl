@@ -86,6 +86,10 @@ image::colour_type image::get(int x, int y) const {
   return colour_type(data_ + (x + y * width_) * bytespp_, bytespp_);
 }
 
+image::colour_type image::sample(float u, float v) const {
+    return get(static_cast<int>(u * width_), static_cast<int>(v * height_));
+}
+
 void image::set(int x, int y, colour_type const& c) {
   assert(!(!data_ || x < 0 || y < 0 || x >= width_ || y >= height_));
   std::copy(c.data(), c.data() + bytespp_, data_ + (x + y * width_) * bytespp_);

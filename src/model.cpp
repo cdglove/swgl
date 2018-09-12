@@ -16,24 +16,30 @@
 
 namespace swgl {
 
-model::model(std::istream& in)
-    : verts_()
-    , faces_() {
+model::model(std::istream& in) {
   std::string line;
   while(!in.eof()) {
     std::getline(in, line);
     std::istringstream iss(line.c_str());
     char trash;
+    float ftrash;
+    int itrash;
     if(!line.compare(0, 2, "v ")) {
       iss >> trash;
       Vec3f v;
       for(int i = 0; i < 3; i++)
         iss >> v.raw[i];
-      verts_.push_back(v);
+      positions_.push_back(v);
+    }
+    else if(!line.compare(0, 3, "vt ")) {
+        iss >> trash >> trash;
+        Vec2f uv;
+        if(iss >> uv.u >> uv.v >> ftrash)
+            uvs_.push_back(uv);
     }
     else if(!line.compare(0, 2, "f ")) {
       std::size_t slashes = std::count(line.begin(), line.end(), '/');
-      int first, second, third, itrash;
+      int first, second, third;
       if(slashes == 0) {
         if(!(iss >> trash >> first >> second >> third)) {
           continue;
@@ -58,14 +64,14 @@ model::model(std::istream& in)
       faces_.push_back({first - 1, second - 1, third - 1});
     }
   }
-  std::cerr << "# v# " << verts_.size() << " f# " << faces_.size() << std::endl;
+  std::cerr << "# v# " << positions_.size() << " f# " << faces_.size() << std::endl;
 }
 
 model::~model() {
 }
 
 int model::nverts() const {
-  return (int)verts_.size();
+  return (int)positions_.size();
 }
 
 int model::nfaces() const {
@@ -76,8 +82,12 @@ triangle const& model::face(int idx) const {
   return faces_[idx];
 }
 
-Vec3f model::vert(int i) const {
-  return verts_[i];
+Vec3f model::position(int i) const {
+  return positions_[i];
+}
+
+Vec2f model::uv(int i) const {
+  return uvs_[i];
 }
 
 } // namespace swgl
