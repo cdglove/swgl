@@ -35,11 +35,7 @@ class model;
 
 class pipeline_counters {
  public:
-  pipeline_counters()
-      : num_pixels_(0)
-      , num_triangles_(0)
-      , num_draws_(0) {
-  }
+  pipeline_counters() = default;
 
   void increment_pixel_count() {
     SWGL_PIPELINE_STAT(++num_pixels_);
@@ -75,9 +71,9 @@ class pipeline_counters {
   }
 
  private:
-  int num_pixels_;
-  int num_triangles_;
-  int num_draws_;
+  int num_pixels_    = 0;
+  int num_triangles_ = 0;
+  int num_draws_     = 0;
 };
 
 class pipeline {
@@ -95,7 +91,7 @@ class pipeline {
   }
 
   void set_texture(std::size_t idx, image const& texture) {
-    textures_.resize(std::max(idx+1, textures_.size()));
+    textures_.resize(std::max(idx + 1, textures_.size()));
     textures_[idx] = &texture;
   }
 

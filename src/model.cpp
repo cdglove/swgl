@@ -20,74 +20,93 @@ model::model(std::istream& in) {
   std::string line;
   while(!in.eof()) {
     std::getline(in, line);
-    std::istringstream iss(line.c_str());
-    char trash;
-    float ftrash;
-    int itrash;
+    std::istringstream iss(line);
+    char ctrash;
     if(!line.compare(0, 2, "v ")) {
-      iss >> trash;
+      iss >> ctrash;
       Vec3f v;
-      for(int i = 0; i < 3; i++)
+      for(int i = 0; i < 3; i++) {
         iss >> v.raw[i];
+	  }
       positions_.push_back(v);
     }
     else if(!line.compare(0, 3, "vt ")) {
-        iss >> trash >> trash;
-        Vec2f uv;
-        if(iss >> uv.u >> uv.v >> ftrash)
-            uvs_.push_back(uv);
+      iss >> ctrash >> ctrash;
+      Vec2f uv;
+      if(iss >> uv.u >> uv.v) {
+        uvs_.push_back(uv);
+	  }
     }
     else if(!line.compare(0, 2, "f ")) {
+      iss >> ctrash;
+      auto decrement_indices = [](auto& c) {
+        std::transform(
+            c.begin(), c.end(), c.begin(), [](int i) { return i - 1; });
+      };
       std::size_t slashes = std::count(line.begin(), line.end(), '/');
-      int first, second, third;
+      std::array<int, 3> ipos, iuv, inorm;
       if(slashes == 0) {
-        if(!(iss >> trash >> first >> second >> third)) {
+        if(iss >> ipos[0] >> ipos[1] >> ipos[2]) {
+          decrement_indices(ipos);
+          idx_position_.push_back(ipos);
           continue;
         }
       }
       else if(slashes == 3) {
-        if(!(iss >> trash >> first >> trash >> itrash >> second >> trash >>
-             itrash >> third >> trash >> itrash)) {
+        if(iss >> ipos[0] >> ctrash >> iuv[0] >> ipos[1] >> ctrash >> iuv[1] >>
+           ipos[2] >> ctrash >> iuv[2]) {
+          decrement_indices(ipos);
+          decrement_indices(iuv);
+          idx_position_.push_back(ipos);
+          idx_uv_.push_back(iuv);
           continue;
         }
       }
       else if(slashes == 6) {
-        if(!(iss >> trash >> first >> trash >> itrash >> trash >> itrash >>
-             second >> trash >> itrash >> trash >> itrash >> third >> trash >>
-             itrash >> trash >> itrash)) {
-          if(!(iss >> trash >> first >> trash >> trash >> itrash >> second >>
-               trash >> trash >> itrash >> third >> trash >> trash >> itrash)) {
+        if(!(iss >> ipos[0] >> ctrash >> iuv[0] >> ctrash >> inorm[0] >>
+             ipos[1] >> ctrash >> iuv[1] >> ctrash >> inorm[1] >> ipos[2] >>
+             ctrash >> iuv[2] >> ctrash >> inorm[2])) {
+          if(iss >> ipos[0] >> ctrash >> ctrash >> inorm[0] >> ipos[1] >>
+             ctrash >> ctrash >> inorm[1] >> ipos[2] >> ctrash >> ctrash >>
+             inorm[2]) {
+            decrement_indices(ipos);
+            decrement_indices(inorm);
+            idx_position_.push_back(ipos);
+            idx_uv_.push_back(inorm);
             continue;
           }
         }
+
+        decrement_indices(ipos);
+        decrement_indices(iuv);
+        decrement_indices(inorm);
+        idx_position_.push_back(ipos);
+        idx_uv_.push_back(iuv);
+        //idx_norm_.push_back(inorm);
       }
-      faces_.push_back({first - 1, second - 1, third - 1});
     }
   }
-  std::cerr << "# v# " << positions_.size() << " f# " << faces_.size() << std::endl;
+
+  std::cerr << "# v# " << positions_.size() << " f# " << idx_position_.size()
+            << std::endl;
 }
 
-model::~model() {
-}
+model::~model() = default;
 
 int model::nverts() const {
-  return (int)positions_.size();
+  return static_cast<int>(positions_.size());
 }
 
 int model::nfaces() const {
-  return (int)faces_.size();
+  return static_cast<int>(idx_position_.size());
 }
 
-triangle const& model::face(int idx) const {
-  return faces_[idx];
+Vec3f model::position(int face, int idx) const {
+  return positions_[idx_position_[face][idx]];
 }
 
-Vec3f model::position(int i) const {
-  return positions_[i];
-}
-
-Vec2f model::uv(int i) const {
-  return uvs_[i];
+Vec2f model::uv(int face, int idx) const {
+  return uvs_[idx_uv_[face][idx]];
 }
 
 } // namespace swgl

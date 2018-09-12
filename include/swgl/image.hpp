@@ -23,7 +23,7 @@ class image {
  public:
   enum Format { GRAYSCALE = 1, RGB = 3, RGBA = 4 };
 
-  typedef colour<std::uint8_t> colour_type;
+  using colour_type = colour<std::uint8_t>;
 
   image();
   image(int w, int h, int bpp);

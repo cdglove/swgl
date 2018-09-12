@@ -17,7 +17,7 @@ namespace swgl {
 template <typename T>
 class colour {
  public:
-  typedef T component_type;
+  using component_type = T;
 
   colour() {
   }
@@ -80,14 +80,16 @@ class colour {
   }
 
   friend colour operator*(colour a, colour const& b) {
-    for(int i = 0; i < 4; ++i)
+    for(int i = 0; i < 4; ++i) {
       a[i] *= b[i];
+    }
     return a;
   }
 
   void operator*=(colour const& b) {
-    for(int i = 0; i < 4; ++i)
+    for(int i = 0; i < 4; ++i) {
       c_[i] *= b[i];
+    }
   }
 
  private:
@@ -99,32 +101,32 @@ colour<Target> colour_cast(colour<Source> const&);
 
 template <>
 inline colour<std::uint8_t> colour_cast(colour<std::uint8_t> const& c) {
-    return c;
+  return c;
 }
 
 template <>
 inline colour<float> colour_cast(colour<float> const& c) {
-    return c;
+  return c;
 }
 
 template <>
 inline colour<std::uint8_t> colour_cast(colour<float> const& source) {
-  return colour<std::uint8_t>(
-      static_cast<std::uint8_t>(source.r() * 255),
-      static_cast<std::uint8_t>(source.g() * 255),
-      static_cast<std::uint8_t>(source.b() * 255),
-      static_cast<std::uint8_t>(source.a() * 255));
+  return {static_cast<std::uint8_t>(source.r() * 255),
+          static_cast<std::uint8_t>(source.g() * 255),
+          static_cast<std::uint8_t>(source.b() * 255),
+          static_cast<std::uint8_t>(source.a() * 255)};
 }
 
 template <>
 inline colour<float> colour_cast(colour<std::uint8_t> const& source) {
-  return colour<float>(
-      // clang-format off
+  return {
+    // clang-format off
       source.r() / 255.f,
       source.g() / 255.f, 
       source.b() / 255.f,
-      source.a() / 255.f);
-      // clang-format on
+      source.a() / 255.f
+    // clang-format on
+  };
 }
 
 } // namespace swgl

@@ -123,10 +123,10 @@ T dot(Vec3<T> v1, Vec3<T> v2) {
   return (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
 }
 
-typedef Vec2<float> Vec2f;
-typedef Vec2<int> Vec2i;
-typedef Vec3<float> Vec3f;
-typedef Vec3<int> Vec3i;
+using Vec2f = Vec2<float>;
+using Vec2i = Vec2<int>;
+using Vec3f = Vec3<float>;
+using Vec3i = Vec3<int>;
 
 template <class t>
 std::ostream& operator<<(std::ostream& s, Vec2<t>& v) {

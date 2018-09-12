@@ -21,12 +21,12 @@ struct bbox_dimension;
 
 template <typename T>
 struct bbox_dimension<T, 2> {
-  typedef Vec2<T> type;
+  using type = Vec2<T>;
 };
 
 template <typename T>
 struct bbox_dimension<T, 3> {
-  typedef Vec3<T> type;
+  using type = Vec3<T>;
 };
 
 } // namespace detail
@@ -34,7 +34,7 @@ struct bbox_dimension<T, 3> {
 template <typename T, std::size_t Dimension>
 class bbox {
  public:
-  typedef typename detail::bbox_dimension<T, Dimension>::type dimension_type;
+  using dimension_type = typename detail::bbox_dimension<T, Dimension>::type;
 
   bbox(dimension_type const& p)
       : min_(p)

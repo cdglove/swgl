@@ -29,7 +29,7 @@ static void line(
   }
 
   for(int x = p0.x; x <= p1.x; x++) {
-    float t = (x - p0.x) / (float)(p1.x - p0.x);
+    float t = (x - p0.x) / static_cast<float>(p1.x - p0.x);
     int y   = static_cast<int>(p0.y * (1.f - t) + p1.y * t);
     if(steep) {
       rt.set(y, x, colour);
@@ -60,7 +60,7 @@ class barycentric_basis {
     }
 
     float zrecip = 1.f / u.z;
-    return Vec3f(1.f - (u.x + u.y) * zrecip, u.y * zrecip, u.x * zrecip);
+    return {1.f - (u.x + u.y) * zrecip, u.y * zrecip, u.x * zrecip};
   }
 
  private:
@@ -69,9 +69,8 @@ class barycentric_basis {
 };
 
 static Vec3f world_to_screen(Vec3f w, Vec2i half_screen) {
-  return Vec3f(
-      std::round((w.x + 1.f) * half_screen.x),
-      std::round((w.y + 1.f) * half_screen.y), w.z);
+  return {std::round((w.x + 1.f) * half_screen.x),
+          std::round((w.y + 1.f) * half_screen.y), w.z};
 }
 
 namespace swgl {
@@ -85,18 +84,16 @@ pipeline_counters pipeline::draw_impl() const {
   ri.half_width      = ri.width / 2;
   ri.half_height     = ri.height / 2;
   model const& model = *model_;
-  typedef swgl::image::colour_type::component_type colour_type;
-  for(int i = 0; i < model.nfaces(); i++) {
-    triangle face = model.face(i);
+  for(int face = 0; face < model.nfaces(); ++face) {
     face_t<Vec3f> screen_coords;
     face_t<Vec3f> world_coords;
     face_t<Vec2f> uv_coords;
     for(int j = 0; j < 3; j++) {
-      Vec3f v = model.position(face[j]);
+      Vec3f v = model.position(face, j);
       screen_coords[j] =
           Vec3f((v.x + 1.f) * ri.half_width, (v.y + 1.f) * ri.half_height, v.z);
       world_coords[j] = v;
-      uv_coords[j] = model.uv(face[j]);
+      uv_coords[j]    = model.uv(face, j);
     }
     Vec3f n = cross(
         (world_coords[2] - world_coords[0]),
@@ -120,8 +117,7 @@ void pipeline::draw_triangle(
   stats.increment_triangle_count();
   auto& depth = *depth_;
   swgl::bbox<float, 3> box(tri.data(), tri.size());
-  box.clamp(
-      Vec3f(0.f, 0.f, 0.f), Vec3f(rt.width() - 1.f, rt.height() - 1.f, 0.f));
+  box.clamp(Vec3f(0.f, 0.f, 0.f), Vec3f(ri.width - 1.f, ri.height - 1.f, 0.f));
   auto bboxmin = box.min();
   auto bboxmax = box.max();
   Vec2i P;
@@ -142,15 +138,14 @@ void pipeline::draw_triangle(
         depth[depth_idx] = Z;
         stats.increment_pixel_count();
         // Invoke pixel shader.
-        swgl::image::colour_type albedo =
-            textures_[0]->sample(UV.u, UV.v);
-        colour<float> lighted = light * colour_cast<float>(albedo);
+        swgl::image::colour_type albedo = textures_[0]->sample(UV.u, UV.v);
+        colour<float> lighted           = light * colour_cast<float>(albedo);
         rt_->set(
             static_cast<int>(P.x), static_cast<int>(P.y),
-            colour_cast<std::uint8_t>(lighted));
+            colour_cast<std::uint8_t>(albedo));
       }
     }
   }
-} // namespace swgl
+}
 
 } // namespace swgl

@@ -16,34 +16,20 @@
 
 namespace swgl {
 
-class triangle {
- public:
-  triangle(int a, int b, int c)
-      : indices_{a, b, c} {
-  }
-
-  int operator[](std::size_t idx) {
-    return indices_[idx];
-  }
-
- private:
-  std::array<int, 3> indices_;
-};
-
 class model {
  public:
   model(std::istream& in);
   ~model();
   int nverts() const;
   int nfaces() const;
-  Vec3f position(int i) const;
-  Vec2f uv(int i) const;
-  triangle const& face(int idx) const;
+  Vec3f position(int face, int i) const;
+  Vec2f uv(int face, int i) const;
 
  private:
   std::vector<Vec3f> positions_;
   std::vector<Vec2f> uvs_;
-  std::vector<triangle> faces_;
+  std::vector<std::array<int, 3>> idx_position_;
+  std::vector<std::array<int, 3>> idx_uv_;
 };
 
 } // namespace swgl
