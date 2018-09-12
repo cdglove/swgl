@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <string>
 
 const swgl::colour<std::uint8_t> white =
     swgl::colour<std::uint8_t>(255, 255, 255, 255);
@@ -44,6 +45,29 @@ static std::vector<float> get_normalised_depth(
   return depth_copy;
 }
 
+static swgl::model load_model(char const* filename) {
+  std::ifstream fin(filename);
+  if(!fin.is_open()) {
+    std::cerr << "can't open file " << filename << "\n";
+    throw std::runtime_error("filed to open file.");
+  }
+  return swgl::model(fin);
+}
+
+static swgl::image load_texture(std::string filename, char const* suffix) {
+  swgl::image dest;
+  size_t dot = filename.find_last_of(".");
+  if(dot != std::string::npos) {
+    filename.erase(filename.begin() + dot, filename.end());
+    filename.append(suffix);
+    std::cerr << "texture file " << filename << " loading "
+              << (dest.read_tga_file(filename.c_str()) ? "ok" : "failed")
+              << std::endl;
+    dest.flip_vertically();
+  }
+  return dest;
+}
+
 class application {
  public:
   application()
@@ -61,30 +85,28 @@ class application {
   int run(int argc, char** argv) {
 
     char const* file = nullptr;
-    if(2 == argc) {
-      file = argv[1];
-    }
-    else {
+    if(2 != argc) {
       std::cout << "Usage: tinyrendertut <obj>" << std::endl;
       return 0;
     }
 
-    std::ifstream fin(file);
-    if(!fin.is_open()) {
-      std::cerr << "can't open file " << file << "\n";
-      return -1;
-    }
-    swgl::model model(fin);
-    swgl::pipeline p;
+    file = argv[1];
 
+    swgl::model model = load_model(file);
+    swgl::image diffuse = load_texture(file, "_diffuse.tga");
+    swgl::pipeline p;
+    p.set_depth(depth_);
+    p.set_model(model);
+    p.set_render_target(rt_);
+    p.set_texture(0, diffuse);
     while(!glfwWindowShouldClose(window_)) {
       rt_.clear(swgl::colour_cast<std::uint8_t>(options_.clear_colour));
       std::fill(
           depth_.begin(), depth_.end(), -std::numeric_limits<float>::max());
-      swgl::pipeline_stats frame_stats;
-      frame_stats += p.draw(model, rt_, depth_);
+      swgl::pipeline_counters frame_counters;
+      frame_counters += p.draw();
       update_window_manager();
-      update_imgui(frame_stats);
+      update_imgui(frame_counters);
       present();
     }
 
@@ -147,7 +169,7 @@ class application {
     ImGui::DestroyContext();
   }
 
-  void update_imgui(swgl::pipeline_stats const& frame_stats) {
+  void update_imgui(swgl::pipeline_counters const& frame_stats) {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL2_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -167,8 +189,6 @@ class application {
       ImGui::Text("This is some useful text."); // Display some text (you can
                                                 // use a format strings too)
 
-      extern bool draw_barycentric;
-      ImGui::Checkbox("Draw Barycentric", &draw_barycentric);
       ImGui::Combo(
           "Display Buffer", &options_.visualize_buffer, "Colour\0Depth\0\0");
       ImGui::Checkbox("Another Window", &show_another_window);

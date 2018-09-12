@@ -27,8 +27,8 @@ class colour {
   }
 
   colour(T const* source, std::size_t bytespp) {
-      std::copy(source, source+bytespp, c_.begin());
-      std::fill(c_.begin()+bytespp, c_.end(), 0);
+    std::copy(source, source + bytespp, c_.begin());
+    std::fill(c_.begin() + bytespp, c_.end(), 0);
   }
 
   T r() const {
@@ -79,6 +79,17 @@ class colour {
     return c_.data();
   }
 
+  friend colour operator*(colour a, colour const& b) {
+    for(int i = 0; i < 4; ++i)
+      a[i] *= b[i];
+    return a;
+  }
+
+  void operator*=(colour const& b) {
+    for(int i = 0; i < 4; ++i)
+      c_[i] *= b[i];
+  }
+
  private:
   std::array<T, 4> c_;
 };
@@ -98,10 +109,12 @@ inline colour<std::uint8_t> colour_cast(colour<float> const& source) {
 template <>
 inline colour<float> colour_cast(colour<std::uint8_t> const& source) {
   return colour<float>(
-      static_cast<std::uint8_t>(source.r() / 255.f),
-      static_cast<std::uint8_t>(source.g() / 255.f),
-      static_cast<std::uint8_t>(source.b() / 255.f),
-      static_cast<std::uint8_t>(source.a() / 255.f));
+      // clang-format off
+      source.r() / 255.f,
+      source.g() / 255.f, 
+      source.b() / 255.f,
+      source.a() / 255.f);
+      // clang-format on
 }
 
 } // namespace swgl
