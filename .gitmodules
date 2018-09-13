@@ -4,3 +4,6 @@
 [submodule "contrib/imgui"]
 	path = contrib/imgui
 	url = git@github.com:ocornut/imgui.git
+[submodule "contrib/stb"]
+	path = contrib/stb
+	url = git@github.com:nothings/stb.git
