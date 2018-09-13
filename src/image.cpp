@@ -87,7 +87,7 @@ image::colour_type image::get(int x, int y) const {
 }
 
 image::colour_type image::sample(float u, float v) const {
-    return get(static_cast<int>(u * width_), static_cast<int>(v * height_));
+  return get(static_cast<int>(u * width_), static_cast<int>(v * height_));
 }
 
 void image::set(int x, int y, colour_type const& c) {
@@ -131,7 +131,7 @@ bool image::read_tga_file(const char* filename) {
   if(width_ <= 0 || height_ <= 0 ||
      (bytespp_ != GRAYSCALE && bytespp_ != RGB && bytespp_ != RGBA)) {
     in.close();
-    std::cerr << "bad bpp (or width_/height_) value\n";
+    std::cerr << "bad bpp (or width/height) value\n";
     return false;
   }
   unsigned long nbytes = bytespp_ * width_ * height_;
@@ -140,14 +140,14 @@ bool image::read_tga_file(const char* filename) {
     in.read((char*)data_, nbytes);
     if(!in.good()) {
       in.close();
-      std::cerr << "an error occured while reading the data_\n";
+      std::cerr << "an error occured while reading the data\n";
       return false;
     }
   }
   else if(10 == header.datatypecode || 11 == header.datatypecode) {
     if(!load_rle_data(in)) {
       in.close();
-      std::cerr << "an error occured while reading the data_\n";
+      std::cerr << "an error occured while reading the data\n";
       return false;
     }
   }
@@ -155,6 +155,12 @@ bool image::read_tga_file(const char* filename) {
     in.close();
     std::cerr << "unknown file format " << (int)header.datatypecode << "\n";
     return false;
+  }
+
+  if(bytespp_ >= 3) {
+    for(int i = 0; i < width_ * height_ * bytespp_; i += bytespp_) {
+      std::swap(data_[i], data_[i + 2]);
+    }
   }
   if(!(header.imagedescriptor & 0x20)) {
     flip_vertically();

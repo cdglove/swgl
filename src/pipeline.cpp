@@ -142,7 +142,7 @@ void pipeline::draw_triangle(
         colour<float> lighted           = light * colour_cast<float>(albedo);
         rt_->set(
             static_cast<int>(P.x), static_cast<int>(P.y),
-            colour_cast<std::uint8_t>(albedo));
+            colour_cast<std::uint8_t>(lighted));
       }
     }
   }

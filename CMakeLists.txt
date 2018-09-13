@@ -35,9 +35,12 @@ option (SWGL_BUILD_DOCS "Build benchmarks" OFF)
 ##############################################################################
 add_library(swgl)
 target_include_directories(
-    swgl PUBLIC 
+    swgl 
+    PUBLIC 
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    $<INSTALL_INTERFACE:include/*.hpp>)
+    $<INSTALL_INTERFACE:include/*.hpp>
+    PRIVATE 
+    contrib/stb)
 
 # target_link_libraries(
 # 	radix INTERFACE Boost::boost)
