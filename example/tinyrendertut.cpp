@@ -1,4 +1,5 @@
 #include "swgl/colour.hpp"
+#include "swgl/geometry/matrix.hpp"
 #include "swgl/image.hpp"
 #include "swgl/model.hpp"
 #include "swgl/pipeline.hpp"
@@ -100,24 +101,9 @@ class application {
     p.set_render_target(rt_);
     p.set_texture(0, diffuse);
     while(!glfwWindowShouldClose(window_)) {
-      rt_.clear(swgl::colour_cast<std::uint8_t>(options_.clear_colour));
-      std::fill(
-          depth_.begin(), depth_.end(), -std::numeric_limits<float>::max());
+      clear_frame();
       swgl::pipeline_counters frame_counters;
       frame_counters += p.draw();
-
-      //   for(int i = 0; i < rt_.width(); ++i) {
-      //     for(int j = 0; j < rt_.height(); ++j) {
-      //       swgl::image::colour_type c = rt_.get(i, j);
-      //       for(int k = 0; k < 3; ++k) {
-      // auto f = swgl::colour_cast<float>(c);
-      //         f[k] = std::pow(f[k], 2.2f);
-      // c = swgl::colour_cast<std::uint8_t>(f);
-      //         rt_.set(i, j, c);
-      //       }
-      //     }
-      //   }
-
       update_window_manager();
       update_imgui(frame_counters);
       present();
@@ -259,6 +245,11 @@ class application {
     }
     ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
     glfwSwapBuffers(window_);
+  }
+
+  void clear_frame() {
+    rt_.clear(swgl::colour_cast<std::uint8_t>(options_.clear_colour));
+    std::fill(depth_.begin(), depth_.end(), -std::numeric_limits<float>::max());
   }
 
   void handle_window_resized(int width, int height) {
