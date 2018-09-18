@@ -10,11 +10,14 @@
 #include "swgl/colour.hpp"
 #include "swgl/geometry.hpp"
 #include "swgl/geometry/bbox.hpp"
+#include "swgl/geometry/vector.hpp"
 #include "swgl/image.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <vector>
+
+using swgl::vector4f;
 
 static void line(
     Vec2i p0, Vec2i p1, swgl::image& rt, swgl::image::colour_type colour) {
@@ -42,42 +45,42 @@ static void line(
 
 class barycentric_basis {
  public:
-  barycentric_basis(Vec3f t0, Vec3f t1, Vec3f t2)
-      : root_(t0)
-      , basis_{Vec3f(t2[0] - t0[0], t1[0] - t0[0], 0.f),
-               Vec3f(t2[1] - t0[1], t1[1] - t0[1], 0.f)} {
+  constexpr barycentric_basis(vector4f t0, vector4f t1, vector4f t2)
+      : root_{t0}
+      , basis_{vector4f{t2[0] - t0[0], t1[0] - t0[0], 0.f, 0.f},
+               vector4f{t2[1] - t0[1], t1[1] - t0[1], 0.f, 0.f}} {
   }
 
-  Vec3f compute(Vec2i P) const {
-    basis_[0].z = root_.x - P.x;
-    basis_[1].z = root_.y - P.y;
+  vector4f compute(Vec2i P) const {
+    basis_[0].z() = root_.x() - P.x;
+    basis_[1].z() = root_.y() - P.y;
 
-    Vec3f u = cross(basis_[0], basis_[1]);
+    vector4f u = cross(basis_[0], basis_[1]);
 
     if(std::abs(u[2]) < 1) {
       // triangle is degenerate.
-      return Vec3f(-1, 1, 1);
+      return {-1, 1, 1, 0};
     }
 
-    float zrecip = 1.f / u.z;
-    return {1.f - (u.x + u.y) * zrecip, u.y * zrecip, u.x * zrecip};
+    float zrecip = 1.f / u.z();
+    return {1.f - (u.x() + u.y()) * zrecip, u.y() * zrecip, u.x() * zrecip};
   }
 
  private:
-  Vec3f root_;
-  mutable std::array<Vec3f, 2> basis_;
+  vector4f root_;
+  mutable std::array<vector4f, 2> basis_;
 };
 
-static Vec3f world_to_screen(Vec3f w, Vec2i half_screen) {
-  return {std::round((w.x + 1.f) * half_screen.x),
-          std::round((w.y + 1.f) * half_screen.y), w.z};
+static vector4f world_to_screen(vector4f w, Vec2i half_screen) {
+  return {std::round((w.x() + 1.f) * half_screen.x),
+          std::round((w.y() + 1.f) * half_screen.y), w.z()};
 }
 
 namespace swgl {
 pipeline_counters pipeline::draw_impl() const {
   pipeline_counters stats;
   stats.increment_draw_count();
-  Vec3f light_dir(0, 0, -1);
+  vector4f light_dir{0, 0, -1, 0};
   raster_info ri;
   ri.width           = rt_->width();
   ri.height          = rt_->height();
@@ -85,17 +88,17 @@ pipeline_counters pipeline::draw_impl() const {
   ri.half_height     = ri.height / 2;
   model const& model = *model_;
   for(int face = 0; face < model.nfaces(); ++face) {
-    face_t<Vec3f> screen_coords;
-    face_t<Vec3f> world_coords;
+    face_t<vector4f> screen_coords;
+    face_t<vector4f> world_coords;
     face_t<Vec2f> uv_coords;
     for(int j = 0; j < 3; j++) {
-      Vec3f v = model.position(face, j);
-      screen_coords[j] =
-          Vec3f((v.x + 1.f) * ri.half_width, (v.y + 1.f) * ri.half_height, v.z);
-      world_coords[j] = v;
-      uv_coords[j]    = model.uv(face, j);
+      vector4f v       = model.position(face, j);
+      screen_coords[j] = {(v.x() + 1.f) * ri.half_width,
+                          (v.y() + 1.f) * ri.half_height, v.z(), 0.f};
+      world_coords[j]  = v;
+      uv_coords[j]     = model.uv(face, j);
     }
-    Vec3f n = cross(
+    vector4f n = cross(
         (world_coords[2] - world_coords[0]),
         (world_coords[1] - world_coords[0]));
     n.normalize();
@@ -110,27 +113,27 @@ pipeline_counters pipeline::draw_impl() const {
 
 void pipeline::draw_triangle(
     raster_info const& ri,
-    face_t<Vec3f> const& tri,
+    face_t<vector4f> const& tri,
     face_t<Vec2f> uvs,
     colour<float> light,
     pipeline_counters& stats) const {
   stats.increment_triangle_count();
   auto& depth = *depth_;
-  swgl::bbox<float, 3> box(tri.data(), tri.size());
-  box.clamp(Vec3f(0.f, 0.f, 0.f), Vec3f(ri.width - 1.f, ri.height - 1.f, 0.f));
+  swgl::bbox<float, 4> box(tri.data(), tri.size());
+  box.clamp({0.f, 0.f, 0.f, 0.f}, {ri.width - 1.f, ri.height - 1.f, 0.f});
   auto bboxmin = box.min();
   auto bboxmax = box.max();
   Vec2i P;
   barycentric_basis barycentric(tri[0], tri[1], tri[2]);
-  for(P.x = static_cast<int>(bboxmin.x); P.x <= bboxmax.x; P.x++) {
-    for(P.y = static_cast<int>(bboxmin.y); P.y <= bboxmax.y; P.y++) {
-      Vec3f bc_screen = barycentric.compute(P);
-      if(bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0)
+  for(P.x = static_cast<int>(bboxmin.x()); P.x <= bboxmax.x(); P.x++) {
+    for(P.y = static_cast<int>(bboxmin.y()); P.y <= bboxmax.y(); P.y++) {
+      vector4f bc_screen = barycentric.compute(P);
+      if(bc_screen.x() < 0 || bc_screen.y() < 0 || bc_screen.z() < 0)
         continue;
       float Z = 0;
       Vec2f UV{0, 0};
       for(int k = 0; k < 3; ++k) {
-        Z += tri[k].z * bc_screen[k];
+        Z += tri[k].z() * bc_screen[k];
         UV = UV + (uvs[k] * bc_screen[k]);
       }
       int depth_idx = static_cast<int>(P.y * ri.width + P.x);

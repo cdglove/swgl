@@ -24,9 +24,9 @@ model::model(std::istream& in) {
     char ctrash;
     if(!line.compare(0, 2, "v ")) {
       iss >> ctrash;
-      Vec3f v;
+      vector4f v;
       for(int i = 0; i < 3; i++) {
-        iss >> v.raw[i];
+        iss >> v[i];
 	  }
       positions_.push_back(v);
     }
@@ -101,7 +101,7 @@ int model::nfaces() const {
   return static_cast<int>(idx_position_.size());
 }
 
-Vec3f model::position(int face, int idx) const {
+vector4f model::position(int face, int idx) const {
   return positions_[idx_position_[face][idx]];
 }
 
