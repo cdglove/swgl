@@ -1,5 +1,4 @@
 #include "swgl/colour.hpp"
-#include "swgl/geometry/matrix.hpp"
 #include "swgl/image.hpp"
 #include "swgl/model.hpp"
 #include "swgl/pipeline.hpp"
