@@ -11,7 +11,7 @@ Model *model = NULL;
 const int width  = 800;
 const int height = 800;
 
-void line(Vec2i p0, Vec2i p1, TGAImage &image, TGAColor color) {
+void line(vector2i p0, vector2i p1, TGAImage &image, TGAColor color) {
     bool steep = false;
     if (std::abs(p0.x-p1.x)<std::abs(p0.y-p1.y)) {
         std::swap(p0.x, p0.y);
@@ -33,7 +33,7 @@ void line(Vec2i p0, Vec2i p1, TGAImage &image, TGAColor color) {
     }
 }
 
-void triangle(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage &image, TGAColor color) {
+void triangle(vector2i t0, vector2i t1, vector2i t2, TGAImage &image, TGAColor color) {
     if (t0.y==t1.y && t0.y==t2.y) return; // i dont care about degenerate triangles
     if (t0.y>t1.y) std::swap(t0, t1);
     if (t0.y>t2.y) std::swap(t0, t2);
@@ -44,8 +44,8 @@ void triangle(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage &image, TGAColor color) {
         int segment_height = second_half ? t2.y-t1.y : t1.y-t0.y;
         float alpha = (float)i/total_height;
         float beta  = (float)(i-(second_half ? t1.y-t0.y : 0))/segment_height; // be careful: with above conditions no division by zero here
-        Vec2i A =               t0 + (t2-t0)*alpha;
-        Vec2i B = second_half ? t1 + (t2-t1)*beta : t0 + (t1-t0)*beta;
+        vector2i A =               t0 + (t2-t0)*alpha;
+        vector2i B = second_half ? t1 + (t2-t1)*beta : t0 + (t1-t0)*beta;
         if (A.x>B.x) std::swap(A, B);
         for (int j=A.x; j<=B.x; j++) {
             image.set(j, t0.y+i, color); // attention, due to int casts t0.y+i != A.y
@@ -61,17 +61,17 @@ int main(int argc, char** argv) {
     }
 
     TGAImage image(width, height, TGAImage::RGB);
-    Vec3f light_dir(0,0,-1);
+    vector3f light_dir(0,0,-1);
     for (int i=0; i<model->nfaces(); i++) {
         std::vector<int> face = model->face(i);
-        Vec2i screen_coords[3];
-        Vec3f world_coords[3];
+        vector2i screen_coords[3];
+        vector3f world_coords[3];
         for (int j=0; j<3; j++) {
-            Vec3f v = model->vert(face[j]);
-            screen_coords[j] = Vec2i((v.x+1.)*width/2., (v.y+1.)*height/2.);
+            vector3f v = model->vert(face[j]);
+            screen_coords[j] = vector2i((v.x+1.)*width/2., (v.y+1.)*height/2.);
             world_coords[j]  = v;
         }
-        Vec3f n = (world_coords[2]-world_coords[0])^(world_coords[1]-world_coords[0]);
+        vector3f n = (world_coords[2]-world_coords[0])^(world_coords[1]-world_coords[0]);
         n.normalize();
         float intensity = n*light_dir;
         if (intensity>0) {

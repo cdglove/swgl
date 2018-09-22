@@ -19,6 +19,130 @@ class vector;
 
 namespace detail {
 
+template <typename T, std::size_t Dimension>
+class vector_operators {
+ private:
+  using derived_type = vector<T, Dimension>;
+
+ public:
+  T& operator[](std::size_t idx) {
+    return derived().raw[idx];
+  }
+
+  T const& operator[](std::size_t idx) const {
+    return derived().raw[idx];
+  }
+
+  friend derived_type operator+(derived_type a, derived_type const& b) {
+    for(std::size_t i = 0; i < derived_type::dimension; ++i) {
+      a[i] += b[i];
+    }
+
+    return a;
+  }
+
+  friend derived_type operator-(derived_type a, derived_type const& b) {
+    for(std::size_t i = 0; i < derived_type::dimension; ++i) {
+      a[i] -= b[i];
+    }
+
+    return a;
+  }
+
+  friend derived_type operator*(derived_type a, derived_type const& b) {
+    for(std::size_t i = 0; i < derived_type::dimension; ++i) {
+      a[i] *= b[i];
+    }
+
+    return a;
+  }
+
+  friend derived_type operator*(derived_type a, T scaler) {
+    for(std::size_t i = 0; i < derived_type::dimension; ++i) {
+      a[i] *= scaler;
+    }
+
+    return a;
+  }
+
+  friend derived_type operator*(T scaler, derived_type b) {
+    for(std::size_t i = 0; i < derived_type::dimension; ++i) {
+      b[i] *= scaler;
+    }
+
+    return b;
+  }
+
+  friend derived_type operator/(derived_type a, derived_type const& b) {
+    for(std::size_t i = 0; i < Dimension; ++i) {
+      a[i] /= b[i];
+    }
+  }
+
+  derived_type& operator+=(derived_type const& b) {
+    for(std::size_t i = 0; i < Dimension; ++i) {
+      (*this)[i] += b[i];
+    }
+
+    return derived();
+    ;
+  }
+
+  derived_type& operator-=(derived_type const& b) {
+    for(std::size_t i = 0; i < Dimension; ++i) {
+      (*this)[i] -= b[i];
+    }
+
+    return derived();
+    ;
+  }
+
+  derived_type& operator*=(derived_type const& b) {
+    for(std::size_t i = 0; i < Dimension; ++i) {
+      (*this)[i] *= b[i];
+    }
+
+    return derived();
+    ;
+  }
+
+  derived_type& operator*=(T scaler) {
+    for(std::size_t i = 0; i < Dimension; ++i) {
+      (*this)[i] *= scaler;
+    }
+
+    return derived();
+  }
+
+  derived_type& operator/=(derived_type const& b) {
+    for(std::size_t i = 0; i < Dimension; ++i) {
+      (*this)[i] /= b[i];
+    }
+
+    return derived();
+    ;
+  }
+
+  float normalize() {
+    float len = length();
+    derived() *= 1 / len;
+    return len;
+  }
+
+  float length() const {
+    return std::sqrt(dot(derived(), derived()));
+  }
+
+ private:
+  derived_type& derived() {
+    return static_cast<derived_type&>(*this);
+  }
+
+  derived_type const& derived() const {
+    return static_cast<derived_type const&>(*this);
+  }
+};
+
 } // namespace detail
 
 // template <typename T, std::size_t Dimension>
@@ -31,26 +155,26 @@ namespace detail {
 // };
 
 template <typename T>
-class vector<T, 2> {
+class vector<T, 2> : public detail::vector_operators<T, 2> {
  public:
   using type                         = T;
   static const std::size_t dimension = 2;
   vector()                           = default;
   vector(vector const&)              = default;
 
-  T& operator[](std::size_t idx) {
-    return v[idx];
-  }
-
-  T const& operator[](std::size_t idx) const {
-    return v[idx];
+  vector(T a, T b)
+      : x(a)
+      , y(b) {
   }
 
   union {
     struct {
       T x, y;
     };
-    std::array<T, 2> v;
+    struct {
+      T u, v;
+    };
+    std::array<T, 2> raw;
   };
 };
 
@@ -60,26 +184,24 @@ using vector2f = vector2<float>;
 using vector2i = vector2<int>;
 
 template <typename T>
-class vector<T, 3> {
+class vector<T, 3> : public detail::vector_operators<T, 3> {
  public:
   using type                         = T;
   static const std::size_t dimension = 3;
   vector()                           = default;
   vector(vector const&)              = default;
 
-  T& operator[](std::size_t idx) {
-    return v[idx];
-  }
-
-  T const& operator[](std::size_t idx) const {
-    return v[idx];
+  vector(T a, T b, T c)
+      : x(a)
+      , y(b)
+      , z(c) {
   }
 
   union {
     struct {
       T x, y, z;
     };
-    std::array<T, 3> v;
+    std::array<T, 3> raw;
   };
 };
 
@@ -96,7 +218,7 @@ vector<T, 3> cross(vector<T, 3> v1, vector<T, 3> v2) {
 
 template <typename T>
 T dot(vector<T, 3> v1, vector<T, 3> v2) {
-  return (v1.x() * v2.x() + v1.y() * v2.y() + v1.z() * v2.z());
+  return (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
 }
 
 template <typename T>
@@ -105,26 +227,25 @@ using vector3f = vector3<float>;
 using vector3i = vector3<int>;
 
 template <typename T>
-class vector<T, 4> {
+class vector<T, 4> : public detail::vector_operators<T, 4> {
  public:
   using type                         = T;
   static const std::size_t dimension = 4;
   vector()                           = default;
   vector(vector const&)              = default;
 
-  T& operator[](std::size_t idx) {
-    return v[idx];
-  }
-
-  T const& operator[](std::size_t idx) const {
-    return v[idx];
+  vector(T a, T b, T c, T d)
+      : x(a)
+      , y(b)
+      , z(c)
+      , w(d) {
   }
 
   union {
     struct {
       T x, y, z, w;
     };
-    std::array<T, 4> v;
+    std::array<T, 4> raw;
   };
 };
 

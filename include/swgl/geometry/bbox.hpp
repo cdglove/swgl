@@ -21,12 +21,12 @@ struct bbox_dimension;
 
 template <typename T>
 struct bbox_dimension<T, 2> {
-  using type = Vec2<T>;
+  using type = vector2<T>;
 };
 
 template <typename T>
 struct bbox_dimension<T, 3> {
-  using type = Vec3<T>;
+  using type = vector3<T>;
 };
 
 } // namespace detail

@@ -112,8 +112,8 @@ class pipeline {
 
   void draw_triangle(
       raster_info const& ri,
-      face_t<Vec3f> const& tri,
-      face_t<Vec2f> uvs,
+      face_t<vector3f> const& tri,
+      face_t<vector2f> uvs,
       colour<float> light,
       pipeline_counters& stats) const;
 

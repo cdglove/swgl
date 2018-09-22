@@ -24,7 +24,7 @@ model::model(std::istream& in) {
     char ctrash;
     if(!line.compare(0, 2, "v ")) {
       iss >> ctrash;
-      Vec3f v;
+      vector3f v;
       for(int i = 0; i < 3; i++) {
         iss >> v.raw[i];
 	  }
@@ -32,7 +32,7 @@ model::model(std::istream& in) {
     }
     else if(!line.compare(0, 3, "vt ")) {
       iss >> ctrash >> ctrash;
-      Vec2f uv;
+      vector2f uv;
       if(iss >> uv.u >> uv.v) {
         uvs_.push_back(uv);
 	  }
@@ -101,11 +101,11 @@ int model::nfaces() const {
   return static_cast<int>(idx_position_.size());
 }
 
-Vec3f model::position(int face, int idx) const {
+vector3f model::position(int face, int idx) const {
   return positions_[idx_position_[face][idx]];
 }
 
-Vec2f model::uv(int face, int idx) const {
+vector2f model::uv(int face, int idx) const {
   return uvs_[idx_uv_[face][idx]];
 }
 

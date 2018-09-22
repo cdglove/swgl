@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <fstream>
 #include <string>
+#include <iostream>
 
 const swgl::colour<std::uint8_t> white =
     swgl::colour<std::uint8_t>(255, 255, 255, 255);
