@@ -10,6 +10,7 @@
 #define SWGL_PIPELINE_HPP
 #pragma once
 
+#include "swgl/geometry/matrix.hpp"
 #include "swgl/image.hpp"
 #include "swgl/model.hpp"
 
@@ -98,6 +99,8 @@ class pipeline {
   void set_render_target(image& rt) {
     rt_ = &rt;
   }
+
+  matrix4f camera_;
 
  protected:
   template <typename T>

@@ -23,34 +23,9 @@ class matrix {
   static const std::size_t column_count  = Dimension;
   static const std::size_t element_count = row_count * column_count;
 
-  using row_type      = std::array<T, column_count>;
-  using index_2d_type = std::pair<std::size_t, std::size_t>;
+  using row_type = std::array<T, column_count>;
 
   matrix() = default;
-  matrix(std::array<T, element_count> init) {
-    std::copy(init.begin(), init.end(), m_.data());
-  }
-
-  matrix(std::array<std::array<T, column_count>, element_count> const& init) {
-    std::copy(
-        init.data().data(), init.data().data() + element_count, m_.data());
-  }
-
-  row_type& operator[](std::size_t idx) {
-    return m_[idx];
-  }
-
-  row_type const& operator[](std::size_t idx) const {
-    return m_[idx];
-  }
-
-  T& operator[](index_2d_type idx) {
-    return m_[idx.first][idx.second];
-  }
-
-  T const& operator[](index_2d_type idx) const {
-    return m_[idx.first][idx.second];
-  }
 
   friend matrix operator*(matrix const& a, matrix const& b) {
     matrix d;
@@ -58,7 +33,7 @@ class matrix {
       for(std::size_t j = 0; j < column_count; ++j) {
         d[i][j] = 0;
         for(std::size_t k = 0; k < Dimension; ++k) {
-          d[i][j] += a[i][k] * c[k][j];
+          d[i][j] += a[i][k] * b[k][j];
         }
       }
     }
@@ -66,7 +41,8 @@ class matrix {
     return d;
   }
 
-  friend vector<T, row_count> operator*(matrix const& a, vector<T, row_count> const& v) {
+  friend vector<T, row_count> operator*(
+      matrix const& a, vector<T, row_count> const& v) {
     vector<T, row_count> d;
     for(std::size_t i = 0; i < row_count; ++i) {
       d[i] = 0;
@@ -78,13 +54,37 @@ class matrix {
     return d;
   }
 
- private:
-  std::array<row_type, row_count> m_;
+  static matrix identity() {
+    matrix ret;
+    std::fill(ret.raw.begin(), ret.raw.end(), T(0));
+    for(int i = 0; i < Dimension; ++i) {
+      ret.m[i][i] = 1;
+    }
+    return ret;
+  }
 
-}; 
+  row_type& operator[](std::size_t idx) {
+    return m[idx];
+  }
 
-template<typename T> 
-using matrix4 = matrix<T, 4>;
+  row_type const& operator[](std::size_t idx) const {
+    return m[idx];
+  }
+
+  void set_column(std::size_t col, vector<T, row_count> c) {
+    for(int i = 0; i < row_count; ++i) {
+      m[i][col] = c[i];
+    }
+  }
+
+  union {
+    std::array<row_type, row_count> m;
+    std::array<T, element_count> raw;
+  };
+};
+
+template <typename T>
+using matrix4  = matrix<T, 4>;
 using matrix4f = matrix<float, 4>;
 
 } // namespace swgl

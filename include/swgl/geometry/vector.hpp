@@ -130,7 +130,11 @@ class vector_operators {
   }
 
   float length() const {
-    return std::sqrt(dot(derived(), derived()));
+    return std::sqrt(length_sq());
+  }
+
+  float length_sq() const {
+    return dot(derived(), derived()); 
   }
 
  private:
@@ -145,14 +149,16 @@ class vector_operators {
 
 } // namespace detail
 
-// template <typename T, std::size_t Dimension>
-// class vector {
-//  public:
-//   using type                         = T;
-//   static const std::size_t dimension = Dimension;
-//   vector()                           = default;
-//   vector(vector const&)              = default;
-// };
+template <typename T, std::size_t Dimension>
+class vector : public detail::vector_operators<T, Dimension> {
+ public:
+  using type                         = T;
+  static const std::size_t dimension = Dimension;
+  vector()                           = default;
+  vector(vector const&)              = default;
+
+  std::array<T, Dimension> raw;
+};
 
 template <typename T>
 class vector<T, 2> : public detail::vector_operators<T, 2> {
@@ -202,6 +208,7 @@ class vector<T, 3> : public detail::vector_operators<T, 3> {
       T x, y, z;
     };
     std::array<T, 3> raw;
+    // T _pad;
   };
 };
 
@@ -270,6 +277,36 @@ template <typename T>
 using vector4  = vector<T, 4>;
 using vector4f = vector4<float>;
 using vector4i = vector4<int>;
+
+template <typename T, typename U>
+T vector_cast(vector<U, T::dimension> const& source) {
+  T ret;
+  std::transform(
+      source.raw.begin(), source.raw.end(), ret.raw.begin(),
+      [](U const& u) { return static_cast<typename T::type>(u); });
+  return ret;
+}
+
+template <typename T, typename U, std::size_t Dimension>
+T vector_cast_widen(vector<U, Dimension> const& source, typename T::type const& fill) {
+  static_assert(T::dimension > Dimension, "Can't widen to the same or smaller size.");
+  T ret;
+  auto end = std::transform(
+      source.raw.begin(), source.raw.end(), ret.raw.begin(),
+      [](U const& u) { return static_cast<typename T::type>(u); });
+  std::fill(end, ret.raw.end(), fill);
+  return ret;
+}
+
+template <typename T, typename U, std::size_t Dimension>
+T vector_cast_narrow(vector<U, Dimension> const& source) {
+  static_assert(T::dimension < Dimension, "Can't narrow to the same or smaller size");
+  T ret;
+  auto end = std::transform(
+      source.raw.begin(), source.raw.begin() + T::dimension, ret.raw.begin(),
+      [](U const& u) { return static_cast<typename T::type>(u); });
+  return ret;
+}
 
 } // namespace swgl
 
