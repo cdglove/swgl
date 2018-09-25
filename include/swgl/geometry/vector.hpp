@@ -79,6 +79,11 @@ class vector_operators {
     }
   }
 
+  friend derived_type operator/(derived_type a, T scaler) {
+    a *= (1.f / scaler);
+    return a;
+  }
+
   derived_type& operator+=(derived_type const& b) {
     for(std::size_t i = 0; i < Dimension; ++i) {
       (*this)[i] += b[i];
@@ -120,7 +125,10 @@ class vector_operators {
     }
 
     return derived();
-    ;
+  }
+
+  derived_type& operator/=(T scaler) {
+    (*this) *= (1.f / scaler);
   }
 
   float normalize() {
@@ -134,7 +142,7 @@ class vector_operators {
   }
 
   float length_sq() const {
-    return dot(derived(), derived()); 
+    return dot(derived(), derived());
   }
 
   static derived_type zero() {
@@ -294,8 +302,10 @@ T vector_cast(vector<U, T::dimension> const& source) {
 }
 
 template <typename T, typename U, std::size_t Dimension>
-T vector_cast_widen(vector<U, Dimension> const& source, typename T::type const& fill) {
-  static_assert(T::dimension > Dimension, "Can't widen to the same or smaller size.");
+T vector_cast_widen(
+    vector<U, Dimension> const& source, typename T::type const& fill) {
+  static_assert(
+      T::dimension > Dimension, "Can't widen to the same or smaller size.");
   T ret;
   auto end = std::transform(
       source.raw.begin(), source.raw.end(), ret.raw.begin(),
@@ -306,7 +316,8 @@ T vector_cast_widen(vector<U, Dimension> const& source, typename T::type const& 
 
 template <typename T, typename U, std::size_t Dimension>
 T vector_cast_narrow(vector<U, Dimension> const& source) {
-  static_assert(T::dimension < Dimension, "Can't narrow to the same or smaller size");
+  static_assert(
+      T::dimension < Dimension, "Can't narrow to the same or smaller size");
   T ret;
   auto end = std::transform(
       source.raw.begin(), source.raw.begin() + T::dimension, ret.raw.begin(),
