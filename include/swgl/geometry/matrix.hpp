@@ -43,9 +43,8 @@ class matrix {
 
   friend vector<T, row_count> operator*(
       matrix const& a, vector<T, row_count> const& v) {
-    vector<T, row_count> d;
+    auto d = vector<T, row_count>::zero();
     for(std::size_t i = 0; i < row_count; ++i) {
-      d[i] = 0;
       for(std::size_t k = 0; k < Dimension; ++k) {
         d[i] += a[i][k] * v[k];
       }

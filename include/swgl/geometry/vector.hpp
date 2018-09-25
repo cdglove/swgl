@@ -137,6 +137,12 @@ class vector_operators {
     return dot(derived(), derived()); 
   }
 
+  static derived_type zero() {
+    derived_type ret;
+    std::fill(ret.raw.begin(), ret.raw.end(), T(0));
+    return ret;
+  }
+
  private:
   derived_type& derived() {
     return static_cast<derived_type&>(*this);

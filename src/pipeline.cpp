@@ -102,17 +102,17 @@ pipeline_counters pipeline::draw_impl() const {
   ri.half_width      = ri.width / 2;
   ri.half_height     = ri.height / 2;
   model const& model = *model_;
-  matrix4f viewport = viewport_matrix(0, 0, rt_->width(), rt_->height());
+  matrix4f viewport  = viewport_matrix(0, 0, rt_->width(), rt_->height());
   for(int face = 0; face < model.nfaces(); ++face) {
     face_t<vector3f> screen_coords;
     face_t<vector3f> world_coords;
     face_t<vector2f> uv_coords;
     for(int j = 0; j < 3; j++) {
       world_coords[j] = model.position(face, j);
-      vector4f proj = camera_ * /*viewport * */ vector_cast_widen<swgl::vector4f>(world_coords[j], 1.f);
-      vector3f v = vector_cast_narrow<swgl::vector3f>(proj) * (1.f / proj.w);
-      screen_coords[j] = vector3f(
-          (v.x + 1.f) * ri.half_width, (v.y + 1.f) * ri.half_height, v.z);
+      vector4f proj   = viewport * camera_ *
+                      vector_cast_widen<swgl::vector4f>(world_coords[j], 1.f);
+      screen_coords[j] =
+          vector_cast_narrow<swgl::vector3f>(proj) * (1.f / proj.w);
       uv_coords[j] = model.uv(face, j);
     }
     vector3f n = cross(
