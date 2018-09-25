@@ -99,8 +99,6 @@ pipeline_counters pipeline::draw_impl() const {
   raster_info ri;
   ri.width           = rt_->width();
   ri.height          = rt_->height();
-  ri.half_width      = ri.width / 2;
-  ri.half_height     = ri.height / 2;
   model const& model = *model_;
   matrix4f viewport  = viewport_matrix(0, 0, rt_->width(), rt_->height());
   for(int face = 0; face < model.nfaces(); ++face) {

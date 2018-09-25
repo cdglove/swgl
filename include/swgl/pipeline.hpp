@@ -109,8 +109,6 @@ class pipeline {
   struct raster_info {
     int width;
     int height;
-    int half_width;
-    int half_height;
   };
 
   void draw_triangle(
