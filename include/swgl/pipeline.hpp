@@ -10,6 +10,7 @@
 #define SWGL_PIPELINE_HPP
 #pragma once
 
+#include "swgl/geometry/matrix.hpp"
 #include "swgl/image.hpp"
 #include "swgl/model.hpp"
 
@@ -99,6 +100,8 @@ class pipeline {
     rt_ = &rt;
   }
 
+  matrix4f camera_;
+
  protected:
   template <typename T>
   using face_t = std::array<T, 3>;
@@ -112,8 +115,8 @@ class pipeline {
 
   void draw_triangle(
       raster_info const& ri,
-      face_t<Vec3f> const& tri,
-      face_t<Vec2f> uvs,
+      face_t<vector3f> const& tri,
+      face_t<vector2f> uvs,
       colour<float> light,
       pipeline_counters& stats) const;
 

@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iostream>
 #include <string>
 
 const swgl::colour<std::uint8_t> white =
@@ -99,8 +100,10 @@ class application {
     p.set_model(model);
     p.set_render_target(rt_);
     p.set_texture(0, diffuse);
+
     while(!glfwWindowShouldClose(window_)) {
       clear_frame();
+      setup_camera(p.camera_);
       swgl::pipeline_counters frame_counters;
       frame_counters += p.draw();
       update_window_manager();
@@ -191,9 +194,7 @@ class application {
           "Display Buffer", &options_.visualize_buffer, "Colour\0Depth\0\0");
       ImGui::Checkbox("Another Window", &show_another_window);
 
-      ImGui::SliderFloat(
-          "float", &f, 0.0f,
-          1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
+      ImGui::SliderFloat("Camera Distance", &camera_distance_, 0.0f, 50.0f);
 
       ImGui::ColorEdit3(
           "clear color",
@@ -251,6 +252,11 @@ class application {
     std::fill(depth_.begin(), depth_.end(), -std::numeric_limits<float>::max());
   }
 
+  void setup_camera(swgl::matrix4f& camera) {
+    camera = swgl::matrix4f::identity();
+    camera[3][2] = -1.f / camera_distance_;
+  }
+
   void handle_window_resized(int width, int height) {
     width_  = width;
     height_ = height;
@@ -267,11 +273,13 @@ class application {
     ImGui::GetIO().FontGlobalScale = scale;
   }
 
-  int width_    = 800;
-  int height_   = 800;
-  float scalew_ = 1.f;
-  float scaleh_ = 1.f;
+  int width_             = 800;
+  int height_            = 800;
+  float scalew_          = 1.f;
+  float scaleh_          = 1.f;
+  float camera_distance_ = 3.f;
   swgl::image rt_;
+  swgl::matrix4f camera_ = swgl::matrix4f::identity();
   std::vector<float> depth_;
   GLFWwindow* window_;
 
