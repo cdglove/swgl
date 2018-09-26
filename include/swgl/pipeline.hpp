@@ -100,8 +100,9 @@ class pipeline {
     rt_ = &rt;
   }
 
-  matrix4f camera_;
-
+  matrix4f projection_;
+  matrix4f view_;
+  
  protected:
   template <typename T>
   using face_t = std::array<T, 3>;

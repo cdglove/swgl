@@ -90,7 +90,6 @@ class vector_operators {
     }
 
     return derived();
-    ;
   }
 
   derived_type& operator-=(derived_type const& b) {
@@ -99,7 +98,6 @@ class vector_operators {
     }
 
     return derived();
-    ;
   }
 
   derived_type& operator*=(derived_type const& b) {
@@ -108,7 +106,6 @@ class vector_operators {
     }
 
     return derived();
-    ;
   }
 
   derived_type& operator*=(T scaler) {
@@ -128,20 +125,25 @@ class vector_operators {
   }
 
   derived_type& operator/=(T scaler) {
-    (*this) *= (1.f / scaler);
+    (*this) *= (1 / scaler);
+    return derived();
   }
 
-  float normalize() {
+  derived_type operator-() const {
+    return derived() * static_cast<T>(-1);
+  }
+
+  T normalize() {
     float len = length();
     derived() *= 1 / len;
     return len;
   }
 
-  float length() const {
+  T length() const {
     return std::sqrt(length_sq());
   }
 
-  float length_sq() const {
+  T length_sq() const {
     return dot(derived(), derived());
   }
 

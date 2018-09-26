@@ -2,6 +2,7 @@
 #include "swgl/image.hpp"
 #include "swgl/model.hpp"
 #include "swgl/pipeline.hpp"
+#include "swgl/camera.hpp"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -103,7 +104,8 @@ class application {
 
     while(!glfwWindowShouldClose(window_)) {
       clear_frame();
-      setup_camera(p.camera_);
+      p.projection_ = get_projection();
+      p.view_ = get_view();
       swgl::pipeline_counters frame_counters;
       frame_counters += p.draw();
       update_window_manager();
@@ -178,23 +180,22 @@ class application {
     static bool show_demo_window    = true;
     static bool show_another_window = false;
 
-    // 2. Show a simple window that we create ourselves. We use a Begin/End
-    // pair to created a named window.
+    // Options window
     {
-      static float f     = 0.0f;
       static int counter = 0;
 
       ImGui::Begin("Options"); // Create a window called "Hello, world!"
                                // and append into it.
 
-      ImGui::Text("This is some useful text."); // Display some text (you can
-                                                // use a format strings too)
-
       ImGui::Combo(
           "Display Buffer", &options_.visualize_buffer, "Colour\0Depth\0\0");
       ImGui::Checkbox("Another Window", &show_another_window);
 
-      ImGui::SliderFloat("Camera Distance", &camera_distance_, 0.0f, 50.0f);
+      ImGui::Separator();
+      ImGui::Text("Camera");
+      ImGui::SliderFloat("Distance", &camera_radius_, 0.1f, 10.f);
+      ImGui::SliderFloat("Rho", &camera_theta_, 0.f, 1.f);
+      ImGui::SliderFloat("Phi", &camera_phi_, 0.f, 1.f);
 
       ImGui::ColorEdit3(
           "clear color",
@@ -252,9 +253,23 @@ class application {
     std::fill(depth_.begin(), depth_.end(), -std::numeric_limits<float>::max());
   }
 
-  void setup_camera(swgl::matrix4f& camera) {
-    camera = swgl::matrix4f::identity();
-    camera[3][2] = -1.f / camera_distance_;
+  swgl::matrix4f get_view() const {
+    swgl::vector3f eye;
+    float ctp = camera_theta_ * 3.1415f * 2;
+    float cpp = camera_phi_ * 3.1415f * 2;
+    eye.x = camera_radius_ * std::sin(ctp) * std::cos(cpp);
+    eye.y = camera_radius_ * std::sin(ctp) * std::sin(cpp);
+    eye.z = camera_radius_ * std::cos(ctp);
+
+    auto view = swgl::lookat(eye, swgl::vector3f::zero(), swgl::vector3f(0.f, 1.f, 0.f));
+    view.set_column(3, view.get_column(3) * camera_radius_);
+    return view;
+  }
+
+  swgl::matrix4f get_projection() const {
+    swgl::matrix4f proj = swgl::matrix4f::identity();
+    proj[3][2] = -1.f / camera_radius_;
+    return proj;
   }
 
   void handle_window_resized(int width, int height) {
@@ -273,11 +288,14 @@ class application {
     ImGui::GetIO().FontGlobalScale = scale;
   }
 
-  int width_             = 800;
-  int height_            = 800;
-  float scalew_          = 1.f;
-  float scaleh_          = 1.f;
-  float camera_distance_ = 3.f;
+  int width_           = 800;
+  int height_          = 800;
+  float scalew_        = 1.f;
+  float scaleh_        = 1.f;
+  float camera_radius_ = 1.5f;
+  float camera_theta_  = 0.08f;
+  float camera_phi_    = 0.4f;
+  swgl::vector3f eye_;
   swgl::image rt_;
   swgl::matrix4f camera_ = swgl::matrix4f::identity();
   std::vector<float> depth_;

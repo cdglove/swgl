@@ -76,6 +76,24 @@ class matrix {
     }
   }
 
+  void set_row(std::size_t row, vector<T, column_count> r) {
+    std::copy(r.raw.begin(), r.raw.end(), m[row].begin());
+  }
+
+  vector<T, row_count> get_column(std::size_t col) const {
+    vector<T, row_count> c;
+    for(int i = 0; i < row_count; ++i) {
+      c[i] = m[i][col];
+    }
+    return c;
+  }
+
+  void get_row(std::size_t row) {
+    vector<T, column_count> r;
+    std::copy(m[row].begin(), m[row].end(), r.raw.begin());
+    return r;
+  }
+
   union {
     std::array<row_type, row_count> m;
     std::array<T, element_count> raw;

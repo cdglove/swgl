@@ -107,7 +107,7 @@ pipeline_counters pipeline::draw_impl() const {
     face_t<vector2f> uv_coords;
     for(int j = 0; j < 3; j++) {
       world_coords[j] = model.position(face, j);
-      vector4f proj   = viewport * camera_ *
+      vector4f proj   = viewport * projection_ * view_ *
                       vector_cast_widen<swgl::vector4f>(world_coords[j], 1.f);
       screen_coords[j] = vector_cast_narrow<swgl::vector3f>(proj) / proj.w;
       uv_coords[j]     = model.uv(face, j);
