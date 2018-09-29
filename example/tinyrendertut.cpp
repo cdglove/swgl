@@ -1,8 +1,18 @@
+//
+// swgl/examples/shaders.cpp
+//
+// Copyright (c) Chris Glover, 2018
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+#include "swgl/camera.hpp"
 #include "swgl/colour.hpp"
 #include "swgl/image.hpp"
 #include "swgl/model.hpp"
 #include "swgl/pipeline.hpp"
-#include "swgl/camera.hpp"
+#include "swgl/shaders/flat.hpp"
+#include "swgl/shaders/gouraud.hpp"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -14,6 +24,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 
 const swgl::colour<std::uint8_t> white =
     swgl::colour<std::uint8_t>(255, 255, 255, 255);
@@ -96,18 +107,36 @@ class application {
 
     swgl::model model   = load_model(file);
     swgl::image diffuse = load_texture(file, "_diffuse.tga");
-    swgl::pipeline p;
-    p.set_depth(depth_);
-    p.set_model(model);
-    p.set_render_target(rt_);
-    p.set_texture(0, diffuse);
+    swgl::shaders::flat f;
+    swgl::shaders::gouraud g;
+    
+    shader_names_ = "Flat\0Gouraud\0\0";
+    shaders_.push_back(&f);
+    shaders_.push_back(&g);
+    options_.shader = 1;
+ 
+    f.set_depth(depth_);
+    f.set_model(model);
+    f.set_render_target(rt_);
+    f.set_albedo(diffuse);
+    f.set_viewport(swgl::viewport_matrix(0, 0, rt_.width(), rt_.height()));
+
+    g.set_depth(depth_);
+    g.set_model(model);
+    g.set_render_target(rt_);
+    g.set_albedo(diffuse);
+    g.set_viewport(swgl::viewport_matrix(0, 0, rt_.width(), rt_.height()));
 
     while(!glfwWindowShouldClose(window_)) {
       clear_frame();
-      p.projection_ = get_projection();
-      p.view_ = get_view();
+      f.set_projection(get_projection());
+      f.set_view(get_view());
+      g.set_projection(get_projection());
+      g.set_view(get_view());
+
       swgl::pipeline_counters frame_counters;
-      frame_counters += p.draw();
+      swgl::pipeline_base* selected_shader = shaders_[options_.shader];
+      frame_counters += selected_shader->draw();
       update_window_manager();
       update_imgui(frame_counters);
       present();
@@ -177,19 +206,16 @@ class application {
     ImGui_ImplOpenGL2_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-    static bool show_demo_window    = true;
-    static bool show_another_window = false;
-
+    
     // Options window
     {
-      static int counter = 0;
-
+    
       ImGui::Begin("Options"); // Create a window called "Hello, world!"
                                // and append into it.
-
       ImGui::Combo(
           "Display Buffer", &options_.visualize_buffer, "Colour\0Depth\0\0");
-      ImGui::Checkbox("Another Window", &show_another_window);
+      ImGui::Combo(
+          "Shader", &options_.shader, shader_names_);
 
       ImGui::Separator();
       ImGui::Text("Camera");
@@ -198,17 +224,11 @@ class application {
       ImGui::SliderFloat("Phi", &camera_phi_, 0.f, 1.f);
 
       ImGui::ColorEdit3(
-          "clear color",
+          "Clear Colour",
           options_.clear_colour.data()); // Edit 3 floats representing a color
-
-      if(ImGui::Button("Button")) { // Buttons return true when clicked (most
-        // widgets return true when edited/activated)
-        counter++;
-      }
-      ImGui::SameLine();
-      ImGui::Text("counter = %d", counter);
     }
 
+    // Stats 
     if(ImGui::CollapsingHeader("Draw Stats")) {
       ImGui::Indent();
       ImGui::Text("pixels = %d", frame_stats.pixel_count());
@@ -257,18 +277,20 @@ class application {
     swgl::vector3f eye;
     float ctp = camera_theta_ * 3.1415f * 2;
     float cpp = camera_phi_ * 3.1415f * 2;
+
     eye.x = camera_radius_ * std::sin(ctp) * std::cos(cpp);
     eye.y = camera_radius_ * std::sin(ctp) * std::sin(cpp);
     eye.z = camera_radius_ * std::cos(ctp);
 
-    auto view = swgl::lookat(eye, swgl::vector3f::zero(), swgl::vector3f(0.f, 1.f, 0.f));
+    auto view = swgl::lookat(
+        eye, swgl::vector3f::zero(), swgl::vector3f(0.f, 1.f, 0.f));
     view.set_column(3, view.get_column(3) * camera_radius_);
     return view;
   }
 
   swgl::matrix4f get_projection() const {
     swgl::matrix4f proj = swgl::matrix4f::identity();
-    proj[3][2] = -1.f / camera_radius_;
+    proj[3][2]          = -1.f / camera_radius_;
     return proj;
   }
 
@@ -299,11 +321,14 @@ class application {
   swgl::image rt_;
   swgl::matrix4f camera_ = swgl::matrix4f::identity();
   std::vector<float> depth_;
+  char const* shader_names_ = nullptr;
+  std::vector<swgl::pipeline_base*> shaders_;
   GLFWwindow* window_;
 
   struct options {
     swgl::colour<float> clear_colour{0, 0, 0, 1};
-    int visualize_buffer{0};
+    int visualize_buffer = 0;
+    int shader = 0;
   } options_;
 };
 

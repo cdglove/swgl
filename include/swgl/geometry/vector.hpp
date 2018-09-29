@@ -139,6 +139,12 @@ class vector_operators {
     return len;
   }
 
+  derived_type normal() {
+    derived_type ret = derived();
+    ret.normalize();
+    return ret;
+  }
+
   T length() const {
     return std::sqrt(length_sq());
   }
@@ -324,6 +330,36 @@ T vector_cast_narrow(vector<U, Dimension> const& source) {
   auto end = std::transform(
       source.raw.begin(), source.raw.begin() + T::dimension, ret.raw.begin(),
       [](U const& u) { return static_cast<typename T::type>(u); });
+  return ret;
+}
+
+template <
+    std::size_t TargetDimension,
+    typename Source,
+    std::size_t SourceDimension>
+vector<Source, TargetDimension> vector_widen(
+    vector<Source, SourceDimension> const& source, Source const& fill) {
+  static_assert(
+      SourceDimension < TargetDimension,
+      "Can't widen to the same or smaller size.");
+  vector<Source, TargetDimension> ret;
+  auto end = std::copy(source.raw.begin(), source.raw.end(), ret.raw.begin());
+  std::fill(end, ret.raw.end(), fill);
+  return ret;
+}
+
+template <
+    std::size_t TargetDimension,
+    typename Source,
+    std::size_t SourceDimension>
+vector<Source, TargetDimension> vector_narrow(
+    vector<Source, SourceDimension> const& source) {
+  static_assert(
+      SourceDimension > TargetDimension,
+      "Can't narrow to the same or smaller size");
+  vector<Source, TargetDimension> ret;
+  auto end = std::copy(
+      source.raw.begin(), source.raw.begin() + TargetDimension, ret.raw.begin());
   return ret;
 }
 

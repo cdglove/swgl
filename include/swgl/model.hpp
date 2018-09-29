@@ -23,12 +23,15 @@ class model {
   int nverts() const;
   int nfaces() const;
   vector3f position(int face, int i) const;
+  vector3f normal(int face, int i) const;
   vector2f uv(int face, int i) const;
 
  private:
   std::vector<vector3f> positions_;
+  std::vector<vector3f> normals_;
   std::vector<vector2f> uvs_;
   std::vector<std::array<int, 3>> idx_position_;
+  std::vector<std::array<int, 3>> idx_normal_;
   std::vector<std::array<int, 3>> idx_uv_;
 };
 

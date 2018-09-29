@@ -30,6 +30,14 @@ model::model(std::istream& in) {
 	  }
       positions_.push_back(v);
     }
+    if(!line.compare(0, 3, "vn ")) {
+      iss >> ctrash >> ctrash;
+      vector3f vn;
+      if(iss >> vn.x >> vn.y >> vn.z) {
+         vn.normalize();
+         normals_.push_back(vn);
+      }
+    }
     else if(!line.compare(0, 3, "vt ")) {
       iss >> ctrash >> ctrash;
       vector2f uv;
@@ -72,7 +80,7 @@ model::model(std::istream& in) {
             decrement_indices(ipos);
             decrement_indices(inorm);
             idx_position_.push_back(ipos);
-            idx_uv_.push_back(inorm);
+            idx_normal_.push_back(inorm);
             continue;
           }
         }
@@ -82,7 +90,7 @@ model::model(std::istream& in) {
         decrement_indices(inorm);
         idx_position_.push_back(ipos);
         idx_uv_.push_back(iuv);
-        //idx_norm_.push_back(inorm);
+        idx_normal_.push_back(inorm);
       }
     }
   }
@@ -103,6 +111,10 @@ int model::nfaces() const {
 
 vector3f model::position(int face, int idx) const {
   return positions_[idx_position_[face][idx]];
+}
+
+vector3f model::normal(int face, int idx) const {
+  return normals_[idx_normal_[face][idx]];
 }
 
 vector2f model::uv(int face, int idx) const {

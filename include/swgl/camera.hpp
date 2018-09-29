@@ -15,9 +15,10 @@
 
 namespace swgl {
 
-inline matrix4f lookat(vector3f const& eye, vector3f const& at, vector3f const& up) {
+inline matrix4f lookat(
+    vector3f const& eye, vector3f const& at, vector3f const& up) {
   matrix4f inv = matrix4f::identity();
-  vector3f z   = eye-at;
+  vector3f z   = eye - at;
   if(z.length_sq() < 0.001f) {
     return inv;
   }
@@ -36,5 +37,19 @@ inline matrix4f lookat(vector3f const& eye, vector3f const& at, vector3f const& 
   auto look = inv * t;
   return look;
 }
+
+inline swgl::matrix4f viewport_matrix(int x, int y, int w, int h) {
+  static const int depth = 255;
+  swgl::matrix4f m       = swgl::matrix4f::identity();
+
+  m[0][3] = x + w / 2.f;
+  m[1][3] = y + h / 2.f;
+  m[2][3] = depth / 2.f;
+  m[0][0] = w / 2.f;
+  m[1][1] = h / 2.f;
+  m[2][2] = depth / 2.f;
+  return m;
+}
+
 } // namespace swgl
 #endif // SWGL_CAMERA_HPP

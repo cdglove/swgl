@@ -94,6 +94,13 @@ class matrix {
     return r;
   }
 
+  void transpose() {
+    matrix c = *this;
+    for(int i = 0; i < Dimension; ++i) {
+      set_row(i, c.get_column(i));
+    }
+  }
+
   union {
     std::array<row_type, row_count> m;
     std::array<T, element_count> raw;
