@@ -11,8 +11,6 @@
 #pragma once
 
 #include "swgl/pipeline.hpp"
-#include <boost/qvm/mat.hpp>
-#include <boost/qvm/mat_operations.hpp>
 
 namespace swgl { namespace shaders {
 
