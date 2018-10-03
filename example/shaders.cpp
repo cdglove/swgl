@@ -13,6 +13,7 @@
 #include "swgl/pipeline.hpp"
 #include "swgl/shaders/flat.hpp"
 #include "swgl/shaders/gouraud.hpp"
+#include "swgl/shaders/phong.hpp"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -109,34 +110,44 @@ class application {
     swgl::image diffuse = load_texture(file, "_diffuse.tga");
     swgl::shaders::flat f;
     swgl::shaders::gouraud g;
-    
-    shader_names_ = "Flat\0Gouraud\0\0";
+    swgl::shaders::phong p;
+
+    shader_names_ = "Flat\0Gouraud\0Phong\0\0";
     shaders_.push_back(&f);
     shaders_.push_back(&g);
-    options_.shader = 1;
- 
+    shaders_.push_back(&p);
+    options_.shader = 2;
+
     f.set_depth(depth_);
     f.set_model(model);
     f.set_render_target(rt_);
     f.set_albedo(diffuse);
-    f.set_viewport(swgl::viewport_matrix(0, 0, rt_.width(), rt_.height()));
 
     g.set_depth(depth_);
     g.set_model(model);
     g.set_render_target(rt_);
     g.set_albedo(diffuse);
-    g.set_viewport(swgl::viewport_matrix(0, 0, rt_.width(), rt_.height()));
+
+    p.set_depth(depth_);
+    p.set_model(model);
+    p.set_render_target(rt_);
+    p.set_albedo(diffuse);
+
+    swgl::shaders::basic_lighted_model::draw_info draw_data;
+    draw_data.model    = swgl::matrix4f::identity();
+    draw_data.viewport = swgl::viewport_matrix(0, 0, rt_.width(), rt_.height());
 
     while(!glfwWindowShouldClose(window_)) {
       clear_frame();
-      f.set_projection(get_projection());
-      f.set_view(get_view());
-      g.set_projection(get_projection());
-      g.set_view(get_view());
+
+      swgl::shaders::basic_lighted_model const* shader =
+          shaders_[options_.shader];
+
+      draw_data.projection = get_projection();
+      draw_data.view       = get_view();
 
       swgl::pipeline_counters frame_counters;
-      swgl::pipeline_base* selected_shader = shaders_[options_.shader];
-      frame_counters += selected_shader->draw();
+      frame_counters += shader->draw(draw_data);
       update_window_manager();
       update_imgui(frame_counters);
       present();
@@ -206,29 +217,28 @@ class application {
     ImGui_ImplOpenGL2_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-    
+
     // Options window
     {
-    
+
       ImGui::Begin("Options"); // Create a window called "Hello, world!"
                                // and append into it.
       ImGui::Combo(
           "Display Buffer", &options_.visualize_buffer, "Colour\0Depth\0\0");
-      ImGui::Combo(
-          "Shader", &options_.shader, shader_names_);
+      ImGui::Combo("Shader", &options_.shader, shader_names_);
 
       ImGui::Separator();
       ImGui::Text("Camera");
       ImGui::SliderFloat("Distance", &camera_radius_, 0.1f, 10.f);
-      ImGui::SliderFloat("Rho", &camera_theta_, 0.f, 1.f);
-      ImGui::SliderFloat("Phi", &camera_phi_, 0.f, 1.f);
+      ImGui::SliderFloat("Rho", &camera_theta_, -1.f, 1.f);
+      ImGui::SliderFloat("Phi", &camera_phi_, -1.f, 1.f);
 
       ImGui::ColorEdit3(
           "Clear Colour",
           options_.clear_colour.data()); // Edit 3 floats representing a color
     }
 
-    // Stats 
+    // Stats
     if(ImGui::CollapsingHeader("Draw Stats")) {
       ImGui::Indent();
       ImGui::Text("pixels = %d", frame_stats.pixel_count());
@@ -322,13 +332,13 @@ class application {
   swgl::matrix4f camera_ = swgl::matrix4f::identity();
   std::vector<float> depth_;
   char const* shader_names_ = nullptr;
-  std::vector<swgl::pipeline_base*> shaders_;
+  std::vector<swgl::shaders::basic_lighted_model*> shaders_;
   GLFWwindow* window_;
 
   struct options {
     swgl::colour<float> clear_colour{0, 0, 0, 1};
     int visualize_buffer = 0;
-    int shader = 0;
+    int shader           = 0;
   } options_;
 };
 

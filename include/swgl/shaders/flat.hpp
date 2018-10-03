@@ -10,11 +10,11 @@
 #define SWGL_SHADERS_FLAT_HPP
 #pragma once
 
-#include "swgl/pipeline.hpp"
+#include "swgl/shaders/basic_lighted_model.hpp"
 
 namespace swgl { namespace shaders {
 
-class flat : public pipeline<flat> {
+class flat : public pipeline<flat, basic_lighted_model> {
  public:
   void set_albedo(image const& texture) {
     albedo_ = &texture;
@@ -38,48 +38,60 @@ class flat : public pipeline<flat> {
 
  private:
   struct vertex_out {
-    vector3f screen_coords = vector3f::zero();
-    vector3f normal        = vector3f::zero();
-    vector2f uv_coords     = vector2f::zero();
+    vector3f position = vector3f::zero();
+    vector2f uv       = vector2f::zero();
+    float light       = 0.f;
+
+    friend vertex_out operator*(vertex_out v, float scaler) {
+      v.position *= scaler;
+      v.uv *= scaler;
+      v.light *= scaler;
+      return v;
+    }
+
+    friend vertex_out operator+(vertex_out a, vertex_out const& b) {
+      a.position += b.position;
+      a.uv += b.uv;
+      a.light += b.light;
+      return a;
+    }
   };
 
-  using base = pipeline<flat>;
+  using base = pipeline<flat, basic_lighted_model>;
   friend class base;
 
   vertex_out shade_vertex(std::size_t face, std::size_t idx) const {
     auto& model = get_model();
     vertex_out out;
     vector4f proj =
-        viewport_ * projection_ * view_ * model_mat_ *
+        draw_info_->viewport * draw_info_->projection * draw_info_->view *
+        draw_info_->model *
         vector_cast_widen<swgl::vector4f>(model.position(face, idx), 1.f);
-    out.screen_coords = vector_cast_narrow<swgl::vector3f>(proj) / proj.w;
-    out.uv_coords     = model.uv(face, idx);
+    out.position = vector_cast_narrow<swgl::vector3f>(proj) / proj.w;
+    out.uv    = model.uv(face, idx);
 
-    out.normal = cross(
+    // Compute directional light.
+    auto normal = cross(
         (model.position(face, 2) - model.position(face, 0)),
         (model.position(face, 1) - model.position(face, 0)));
-    out.normal.normalize();
+    normal.normalize();
+
+    vector3f light_dir(0, 0, -1);
+    float intensity = dot(normal, light_dir);
+    intensity       = std::max(0.f, intensity);
+    
+    // Add some Ambient
+    intensity += 0.2f;
+    intensity = std::min(intensity, 1.f);
+    out.light = intensity;
     return out;
   }
 
   colour<float> shade_fragment(vertex_out const& in) const {
-    vector3f light_dir(0, 0, -1);
-    float intensity = dot(in.normal, light_dir);
-    intensity       = std::max(0.f, intensity);
-    // Add some Ambient
-    intensity += 0.1f;
-    intensity = std::min(intensity, 1.f);
-    colour<float> lighted;
-    if(intensity >= 0) {
-      swgl::colour<float> light(intensity, intensity, intensity, 0.f);
-      swgl::image::colour_type albedo =
-          albedo_->sample(in.uv_coords.u, in.uv_coords.v);
-      lighted     = light * colour_cast<float>(albedo);
-      lighted.a() = 1;
-    }
-    else {
-      lighted = colour<float>(0.f, 0.f, 0.f, 1.f);
-    }
+    swgl::colour<float> light(in.light, in.light, in.light, 1.f);
+    swgl::image::colour_type albedo = albedo_->sample(in.uv.u, in.uv.v);
+    colour<float> lighted           = light * colour_cast<float>(albedo);
+    lighted.a() = 1.f;
     // lighted = colour<float>(std::abs(in.normal.x), std::abs(in.normal.y),
     // std::abs(in.normal.z), 1.f);
     return lighted;

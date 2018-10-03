@@ -139,7 +139,7 @@ class vector_operators {
     return len;
   }
 
-  derived_type normal() {
+  derived_type normal() const {
     derived_type ret = derived();
     ret.normalize();
     return ret;

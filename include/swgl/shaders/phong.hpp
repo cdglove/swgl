@@ -1,20 +1,21 @@
 //
-// swgl/shaders/gouraud.hpp
+// swgl/shaders/phong.hpp
 //
 // Copyright (c) Chris Glover, 2018
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef SWGL_SHADERS_GOUROUD_HPP
-#define SWGL_SHADERS_GOUROUD_HPP
+#ifndef SWGL_SHADERS_PHONG_HPP
+#define SWGL_SHADERS_PHONG_HPP
 #pragma once
 
+#include "swgl/algorithm.hpp"
 #include "swgl/shaders/basic_lighted_model.hpp"
 
 namespace swgl { namespace shaders {
 
-class gouraud : public pipeline<gouraud, basic_lighted_model> {
+class phong : public pipeline<phong, basic_lighted_model> {
  public:
   void set_albedo(image const& texture) {
     albedo_ = &texture;
@@ -23,25 +24,25 @@ class gouraud : public pipeline<gouraud, basic_lighted_model> {
  private:
   struct vertex_out {
     vector3f position = vector3f::zero();
+    vector3f normal   = vector3f::zero();
     vector2f uv       = vector2f::zero();
-    float light       = 0.f;
 
     friend vertex_out operator*(vertex_out v, float scaler) {
       v.position *= scaler;
+      v.normal *= scaler;
       v.uv *= scaler;
-      v.light *= scaler;
       return v;
     }
 
     friend vertex_out operator+(vertex_out a, vertex_out const& b) {
       a.position += b.position;
+      a.normal += b.normal;
       a.uv += b.uv;
-      a.light += b.light;
       return a;
     }
   };
 
-  using base = pipeline<gouraud, basic_lighted_model>;
+  using base = pipeline<phong, basic_lighted_model>;
   friend class base;
 
   vertex_out shade_vertex(std::size_t face, std::size_t idx) const {
@@ -52,28 +53,36 @@ class gouraud : public pipeline<gouraud, basic_lighted_model> {
                     vector_widen<4>(model.position(face, idx), 1.f);
     out.position = vector_narrow<3>(proj) / proj.w;
     out.uv       = model.uv(face, idx);
-
-    vector3f light_dir(0, 0, 1);
-    float intensity = dot(model.normal(face, idx), light_dir);
-    intensity       = std::max(0.f, intensity);
-
-    // Add some Ambient
-    intensity += 0.2f;
-    intensity = std::min(intensity, 1.f);
-    out.light = intensity;
+    out.normal   = model.normal(face, idx);
     return out;
   }
 
   colour<float> shade_fragment(vertex_out const& in) const {
-    swgl::colour<float> light(in.light, in.light, in.light, 1.f);
-    auto albedo           = albedo_->sample(in.uv.u, in.uv.v);
-    colour<float> lighted = light * colour_cast<float>(albedo);
-    lighted.a()           = 1.f;
-    // lighted = colour<float>(
-    //   std::abs(in.normal.x), std::abs(in.normal.y), std::abs(in.normal.z),
-    //   1.f);
+    vector3f light_dir(0, 0, 1.f);
+    float n_dot_l = dot(in.normal, light_dir);
+    n_dot_l       = std::max(0.f, n_dot_l);
 
-    return lighted;
+    float phong = 0.f;
+    if(n_dot_l > 0.f) {
+      vector3f view          = in.position.normal();
+      vector3f neg_light_dir = -light_dir;
+      vector3f reflect =
+          neg_light_dir - (2.f * (dot(in.normal, neg_light_dir) * in.normal));
+      float phong = dot(view, reflect);
+      phong       = clamp(phong, 0.f, 1.f);
+      phong       = pow(phong, 16.f);
+    }
+
+    vector4f albedo =
+        to_vector(colour_cast<float>(albedo_->sample(in.uv.u, in.uv.v)));
+    float attenuation = 1.f;
+    vector4f spec_colour(0.f, 0.f, 1.f, 1.f);
+    float ambient = 0.2f;
+
+    vector4f lighted = (albedo * attenuation * n_dot_l) +
+                       (spec_colour * attenuation * phong) + (albedo * ambient);
+
+    return from_vector(lighted);
   }
 
   image const* albedo_ = nullptr;
@@ -81,4 +90,4 @@ class gouraud : public pipeline<gouraud, basic_lighted_model> {
 
 }} // namespace swgl::shaders
 
-#endif // SWGL_SHADERS_GOURAUD_HPP
+#endif // SWGL_SHADERS_PHONG_HPP

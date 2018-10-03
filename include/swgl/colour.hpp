@@ -11,6 +11,7 @@
 #pragma once
 
 #include <array>
+#include "swgl/geometry/vector.hpp"
 
 namespace swgl {
 
@@ -28,7 +29,9 @@ class colour {
 
   colour(T const* source, std::size_t bytespp) {
     std::copy(source, source + bytespp, c_.begin());
-    std::fill(c_.begin() + bytespp, c_.end(), 0);
+    std::fill(c_.begin() + bytespp, c_.end()-1, 0);
+    a() = 1;
+
   }
 
   T r() const {
@@ -111,10 +114,10 @@ inline colour<float> colour_cast(colour<float> const& c) {
 
 template <>
 inline colour<std::uint8_t> colour_cast(colour<float> const& source) {
-  return {static_cast<std::uint8_t>(source.r() * 255),
-          static_cast<std::uint8_t>(source.g() * 255),
-          static_cast<std::uint8_t>(source.b() * 255),
-          static_cast<std::uint8_t>(source.a() * 255)};
+  return {static_cast<std::uint8_t>(std::min(1.f, source.r()) * 255),
+          static_cast<std::uint8_t>(std::min(1.f, source.g()) * 255),
+          static_cast<std::uint8_t>(std::min(1.f, source.b()) * 255),
+          static_cast<std::uint8_t>(std::min(1.f, source.a()) * 255)};
 }
 
 template <>
@@ -127,6 +130,16 @@ inline colour<float> colour_cast(colour<std::uint8_t> const& source) {
       source.a() / 255.f
     // clang-format on
   };
+}
+
+// cglover-todo: oct10_2018: No need for float colour type.
+// Or do we define operators between the two?
+inline vector4f to_vector(colour<float> const& source) {
+  return vector4f(source.r(), source.g(), source.b(), source.a());
+}
+
+inline colour<float> from_vector(vector4f const& source) {
+  return colour<float>(source.x, source.y, source.z, source.w);
 }
 
 } // namespace swgl

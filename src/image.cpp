@@ -49,7 +49,7 @@ image::image(int w, int h, int bpp)
     , bytespp_(bpp) {
   unsigned long nbytes = width_ * height_ * bytespp_;
   data_                = new unsigned char[nbytes];
-  memset(data_, 0, nbytes);
+  std::memset(data_, 0, nbytes);
 }
 
 image::image(const image& img)
@@ -59,7 +59,7 @@ image::image(const image& img)
     , bytespp_(img.bytespp_) {
   unsigned long nbytes = width_ * height_ * bytespp_;
   data_                = new unsigned char[nbytes];
-  memcpy(data_, img.data_, nbytes);
+  std::memcpy(data_, img.data_, nbytes);
 }
 
 image::~image() {
@@ -76,7 +76,7 @@ image& image::operator=(const image& img) {
     bytespp_             = img.bytespp_;
     unsigned long nbytes = width_ * height_ * bytespp_;
     data_                = new unsigned char[nbytes];
-    memcpy(data_, img.data_, nbytes);
+    std::memcpy(data_, img.data_, nbytes);
   }
   return *this;
 }
