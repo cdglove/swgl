@@ -47,9 +47,8 @@ class gouraud : public pipeline<gouraud, basic_lighted_model> {
   vertex_out shade_vertex(std::size_t face, std::size_t idx) const {
     auto& model = get_model();
     vertex_out out;
-    vector4f proj = draw_info_->viewport * draw_info_->projection *
-                    draw_info_->view * draw_info_->model *
-                    vector_widen<4>(model.position(face, idx), 1.f);
+    vector4f proj =
+        cached_mvpv_ * vector_widen<4>(model.position(face, idx), 1.f);
     out.position = vector_narrow<3>(proj) / proj.w;
     out.uv       = model.uv(face, idx);
 

@@ -42,6 +42,10 @@ class phong : public pipeline<phong, basic_lighted_model> {
     }
   };
 
+  static vector3f reflect(vector3f neg_light_dir, vector3f normal) {
+    return neg_light_dir - (2.f * (dot(normal, neg_light_dir) * normal));
+  }
+
   using base = pipeline<phong, basic_lighted_model>;
   friend class base;
 
@@ -64,11 +68,10 @@ class phong : public pipeline<phong, basic_lighted_model> {
 
     float phong = 0.f;
     if(n_dot_l > 0.f) {
-      vector3f view          = in.position.normal();
-      vector3f neg_light_dir = -light_dir;
-      vector3f reflect =
-          neg_light_dir - (2.f * (dot(in.normal, neg_light_dir) * in.normal));
-      float phong = dot(view, reflect);
+      vector3f view      = -in.position.normal();
+      vector3f ref = reflect(-light_dir, in.normal);
+          
+      float phong = dot(view, ref);
       phong       = clamp(phong, 0.f, 1.f);
       phong       = pow(phong, 16.f);
     }

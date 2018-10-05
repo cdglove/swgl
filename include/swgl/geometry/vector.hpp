@@ -10,6 +10,7 @@
 #define SWGL_GEOMETRY_VECTOR_HPP
 #pragma once
 
+#include "swgl/geometry/initialisers.hpp"
 #include <array>
 
 namespace swgl {
@@ -176,8 +177,21 @@ class vector : public detail::vector_operators<T, Dimension> {
  public:
   using type                         = T;
   static const std::size_t dimension = Dimension;
-  vector()                           = default;
-  vector(vector const&)              = default;
+
+  vector(init::zero_t) {
+    std::fill(raw.begin(), raw.end(), T(0));
+  }
+
+  vector(init::one_t) {
+    std::fill(raw.begin(), raw.end(), T(0));
+  }
+
+  vector(init::uninitialised_t) {
+  }
+
+  vector()
+      : vector(init::zero_t) {
+  }
 
   std::array<T, Dimension> raw;
 };
@@ -187,8 +201,21 @@ class vector<T, 2> : public detail::vector_operators<T, 2> {
  public:
   using type                         = T;
   static const std::size_t dimension = 2;
-  vector()                           = default;
-  vector(vector const&)              = default;
+
+  vector(init::zero_t) {
+    std::fill(raw.begin(), raw.end(), T(0));
+  }
+
+  vector(init::one_t) {
+    std::fill(raw.begin(), raw.end(), T(0));
+  }
+
+  vector(init::uninitialised_t) {
+  }
+
+  vector()
+      : vector(init::zero) {
+  }
 
   vector(T a, T b)
       : x(a)
@@ -216,8 +243,21 @@ class vector<T, 3> : public detail::vector_operators<T, 3> {
  public:
   using type                         = T;
   static const std::size_t dimension = 3;
-  vector()                           = default;
-  vector(vector const&)              = default;
+
+  vector(init::zero_t) {
+    std::fill(raw.begin(), raw.end(), T(0));
+  }
+
+  vector(init::one_t) {
+    std::fill(raw.begin(), raw.end(), T(0));
+  }
+
+  vector(init::uninitialised_t) {
+  }
+
+  vector()
+      : vector(init::zero) {
+  }
 
   vector(T a, T b, T c)
       : x(a)
@@ -260,8 +300,21 @@ class vector<T, 4> : public detail::vector_operators<T, 4> {
  public:
   using type                         = T;
   static const std::size_t dimension = 4;
-  vector()                           = default;
-  vector(vector const&)              = default;
+
+  vector(init::zero_t) {
+    std::fill(raw.begin(), raw.end(), T(0));
+  }
+
+  vector(init::one_t) {
+    std::fill(raw.begin(), raw.end(), T(1));
+  }
+
+  vector(init::uninitialised_t) {
+  }
+
+  vector()
+      : vector(init::zero) {
+  }
 
   vector(T a, T b, T c, T d)
       : x(a)
@@ -359,7 +412,8 @@ vector<Source, TargetDimension> vector_narrow(
       "Can't narrow to the same or smaller size");
   vector<Source, TargetDimension> ret;
   auto end = std::copy(
-      source.raw.begin(), source.raw.begin() + TargetDimension, ret.raw.begin());
+      source.raw.begin(), source.raw.begin() + TargetDimension,
+      ret.raw.begin());
   return ret;
 }
 

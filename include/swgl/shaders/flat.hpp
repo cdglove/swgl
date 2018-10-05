@@ -64,22 +64,21 @@ class flat : public pipeline<flat, basic_lighted_model> {
     auto& model = get_model();
     vertex_out out;
     vector4f proj =
-        draw_info_->viewport * draw_info_->projection * draw_info_->view *
-        draw_info_->model *
-        vector_cast_widen<swgl::vector4f>(model.position(face, idx), 1.f);
-    out.position = vector_cast_narrow<swgl::vector3f>(proj) / proj.w;
-    out.uv    = model.uv(face, idx);
+        cached_mvpv_ * vector_widen<4>(model.position(face, idx), 1.f);
+    out.position = vector_narrow<3>(proj) / proj.w;
+    out.uv       = model.uv(face, idx);
 
     // Compute directional light.
     auto normal = cross(
         (model.position(face, 2) - model.position(face, 0)),
         (model.position(face, 1) - model.position(face, 0)));
     normal.normalize();
+    normal.normalize();
 
     vector3f light_dir(0, 0, -1);
     float intensity = dot(normal, light_dir);
     intensity       = std::max(0.f, intensity);
-    
+
     // Add some Ambient
     intensity += 0.2f;
     intensity = std::min(intensity, 1.f);
@@ -91,9 +90,7 @@ class flat : public pipeline<flat, basic_lighted_model> {
     swgl::colour<float> light(in.light, in.light, in.light, 1.f);
     swgl::image::colour_type albedo = albedo_->sample(in.uv.u, in.uv.v);
     colour<float> lighted           = light * colour_cast<float>(albedo);
-    lighted.a() = 1.f;
-    // lighted = colour<float>(std::abs(in.normal.x), std::abs(in.normal.y),
-    // std::abs(in.normal.z), 1.f);
+    lighted.a()                     = 1.f;
     return lighted;
   }
 

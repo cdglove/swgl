@@ -229,7 +229,7 @@ class application {
 
       ImGui::Separator();
       ImGui::Text("Camera");
-      ImGui::SliderFloat("Distance", &camera_radius_, 0.1f, 10.f);
+      ImGui::SliderFloat("Distance", &camera_radius_, 0.25f, 5.f);
       ImGui::SliderFloat("Rho", &camera_theta_, -1.f, 1.f);
       ImGui::SliderFloat("Phi", &camera_phi_, -1.f, 1.f);
 

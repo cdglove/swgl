@@ -17,7 +17,7 @@ namespace swgl {
 
 inline matrix4f lookat(
     vector3f const& eye, vector3f const& at, vector3f const& up) {
-  matrix4f inv = matrix4f::identity();
+  matrix4f inv(init::identity);
   vector3f z   = eye - at;
   if(z.length_sq() < 0.001f) {
     return inv;
@@ -29,11 +29,11 @@ inline matrix4f lookat(
   vector3f y = cross(z, x);
   y.normalize();
 
-  inv.set_row(0, vector_cast_widen<vector4f>(x, 0.f));
-  inv.set_row(1, vector_cast_widen<vector4f>(y, 0.f));
-  inv.set_row(2, vector_cast_widen<vector4f>(z, 0.f));
+  inv.set_row(0, vector_widen<4>(x, 0.f));
+  inv.set_row(1, vector_widen<4>(y, 0.f));
+  inv.set_row(2, vector_widen<4>(z, 0.f));
   matrix4f t = matrix4f::identity();
-  t.set_column(3, swgl::vector_cast_widen<swgl::vector4f>(-at, 1.f));
+  t.set_column(3, swgl::vector_widen<4>(-at, 1.f));
   auto look = inv * t;
   return look;
 }

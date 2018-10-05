@@ -25,7 +25,24 @@ class matrix {
 
   using row_type = std::array<T, column_count>;
 
-  matrix() = default;
+  matrix()
+      : matrix(init::zero) {
+  }
+
+  matrix(init::zero_t) {
+    std::fill(raw.begin(), raw.end(), T(0));
+  }
+
+  matrix(init::one_t) {
+    std::fill(raw.begin(), raw.end(), T(1));
+  }
+
+  matrix(init::identity_t) {
+    std::fill(raw.begin(), raw.end(), T(0));
+    for(int i = 0; i < Dimension; ++i) {
+      m[i][i] = 1;
+    }
+  }
 
   friend matrix operator*(matrix const& a, matrix const& b) {
     matrix d;
@@ -51,15 +68,6 @@ class matrix {
     }
 
     return d;
-  }
-
-  static matrix identity() {
-    matrix ret;
-    std::fill(ret.raw.begin(), ret.raw.end(), T(0));
-    for(int i = 0; i < Dimension; ++i) {
-      ret.m[i][i] = 1;
-    }
-    return ret;
   }
 
   row_type& operator[](std::size_t idx) {
@@ -99,6 +107,10 @@ class matrix {
     for(int i = 0; i < Dimension; ++i) {
       set_row(i, c.get_column(i));
     }
+  }
+
+  static matrix identity() {
+    return {init::identity};
   }
 
   union {
