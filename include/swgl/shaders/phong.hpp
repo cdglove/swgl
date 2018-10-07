@@ -24,7 +24,7 @@ class phong : public pipeline<phong, basic_lighted_model> {
 
  private:
   struct vertex_out {
-    vector3f cam_pos = vector3f::zero();
+    vector3f cam_pos  = vector3f::zero();
     vector3f position = vector3f::zero();
     vector3f normal   = vector3f::zero();
     vector2f uv       = vector2f::zero();
@@ -58,22 +58,22 @@ class phong : public pipeline<phong, basic_lighted_model> {
     vector4f vertex_position = vector_widen<4>(model.position(face, idx), 1.f);
 
     vector4f proj = mvpv_ * vertex_position;
-    out.cam_pos    = vector_narrow<3>(mv_ * vertex_position);
-    out.position = vector_narrow<3>(proj) / proj.w;
-    out.uv       = model.uv(face, idx);
-    out.normal   = model.normal(face, idx);
+    out.cam_pos   = vector_narrow<3>(mv_ * vertex_position);
+    out.position  = vector_narrow<3>(proj) / proj.w;
+    out.uv        = model.uv(face, idx);
+    out.normal    = model.normal(face, idx);
     return out;
   }
 
   colour<float> shade_fragment(vertex_out const& in) const {
-    vector3f light_dir   = (in.cam_pos - point_light_cs_);
+    vector3f light_dir   = (point_light_cs_ - in.cam_pos);
     float light_distance = light_dir.normalize();
     float n_dot_l        = dot(in.normal, light_dir);
     n_dot_l              = std::max(0.f, n_dot_l);
 
     float phong = 0.f;
     if(n_dot_l > 0.f) {
-      vector3f view = -in.cam_pos.normal();
+      vector3f view = vector_narrow<3>(draw_info_->view.get_column(3));
       vector3f ref  = reflect(-light_dir, in.normal);
 
       float phong = dot(view, ref);
