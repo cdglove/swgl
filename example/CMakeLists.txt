@@ -11,12 +11,16 @@
 # Helper functions to add examples
 ##############################################################################
 function(add_swgl_example_target target_name target_file)
-  add_executable(${target_name} ${target_file} ${PROJECT_SOURCE_DIR}/contrib/imgui/imgui_demo.cpp)
+  add_executable(${target_name} 
+    ${target_file} 
+    ${PROJECT_SOURCE_DIR}/contrib/imgui/imgui_demo.cpp
+    ${PROJECT_SOURCE_DIR}/contrib/imguizmo/ImGuizmo/ImGuizmo.cpp)
   set(libgl GL)
   if(WIN32)
     set(libgl OpenGL32)
   endif()
   target_link_libraries(${target_name} PRIVATE swgl imgui_glfw2 ${libgl})
+  target_include_directories(${target_name} PRIVATE ${PROJECT_SOURCE_DIR}/contrib/imguizmo)
 endfunction()
 
 function(add_swgl_example target_file)

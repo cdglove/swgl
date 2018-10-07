@@ -7,3 +7,6 @@
 [submodule "contrib/stb"]
 	path = contrib/stb
 	url = git@github.com:nothings/stb.git
+[submodule "contrib/imguizmo/ImGuizmo"]
+	path = contrib/imguizmo/ImGuizmo
+	url = git@github.com:CedricGuillemet/ImGuizmo.git
