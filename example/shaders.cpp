@@ -236,12 +236,13 @@ class application {
 
       ImGui::Separator();
       ImGui::Text("Camera");
-      ImGui::SliderFloat("Distance", &camera_radius_, 0.2f, 5.f);
+      ImGui::SliderFloat("CDistance", &camera_radius_, 0.2f, 5.f);
       ImGui::SliderFloat2("CThetaPhi", camera_theta_phi_.raw.data(), -1.f, 1.f);
 
       ImGui::Separator();
       ImGui::Text("Light Direction");
-      ImGui::SliderFloat2("LThetaPhi", dir_light_theta_phi_.raw.data(), -1.f, 1.f);
+      ImGui::SliderFloat("LDistance", &light_distance_, 0.2f, 5.f);
+      ImGui::SliderFloat2("LThetaPhi", light_theta_phi_.raw.data(), -1.f, 1.f);
 
       ImGui::ColorEdit3(
           "Clear Colour",
@@ -254,13 +255,10 @@ class application {
     {
       ImGui::Begin("Draw Stats");
 
-      // if(ImGui::CollapsingHeader("Draw Stats")) {
-      //   ImGui::Indent();
       ImGui::Text("pixels = %d", frame_stats.pixel_count());
       ImGui::Text("triangles = %d", frame_stats.triangle_count());
       ImGui::Text("draws = %d", frame_stats.draw_count());
-      // ImGui::Unindent();
-
+     
       ImGui::Text(
           "Application average %.3f ms/frame (%.1f FPS)",
           1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
@@ -305,8 +303,9 @@ class application {
     draw_data.view          = get_view(draw_data.eye);
     draw_data.ambient_light = 0.2f;
     draw_data.directional_light =
-        polar_to_3d(dir_light_theta_phi_[0], dir_light_theta_phi_[1], 1.f);
-    draw_data.point_light = swgl::vector3f(0.f, 0.f, -5.f);
+        polar_to_3d(light_theta_phi_[0], light_theta_phi_[1], 1.f);
+    draw_data.point_light =
+        -polar_to_3d(light_theta_phi_[0], light_theta_phi_[1], light_distance_);
   }
 
   swgl::vector3f get_eye() {
@@ -349,7 +348,8 @@ class application {
   float scaleh_        = 1.f;
   float camera_radius_ = 1.5f;
   swgl::vector2f camera_theta_phi_{0.08f, 0.4f};
-  swgl::vector2f dir_light_theta_phi_;
+  swgl::vector2f light_theta_phi_;
+  float light_distance_ = 1.f;
   swgl::vector3f eye_;
   swgl::image rt_;
   swgl::matrix4f camera_ = swgl::matrix4f::identity();

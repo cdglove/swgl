@@ -26,21 +26,31 @@ class basic_lighted_model {
     vector3f eye;
     vector3f point_light;
     vector3f directional_light;
-    float    ambient_light;
+    float ambient_light;
   };
 
   pipeline_counters draw(draw_info const& info) const {
-    draw_info_   = &info;
-    cached_mvpv_ = info.viewport * info.projection * info.view * info.model;
-    auto ret     = draw_impl();
-    cached_mvpv_ = matrix4f::identity();
-    draw_info_   = nullptr;
-    return ret;
+    prepare_for_draw(info);
+    return draw_impl();
   }
 
  protected:
+  void prepare_for_draw(draw_info const& info) const {
+    draw_info_ = &info;
+    mv_        = info.view * info.model;
+    mvpv_      = info.viewport * info.projection * mv_;
+
+    directional_light_cs_ = vector_narrow<3>(
+        info.view * vector_widen<4>(info.directional_light, 1.f));
+    point_light_cs_ =
+        vector_narrow<3>(info.view * vector_widen<4>(info.point_light, 1.f));
+  }
+
   mutable draw_info const* draw_info_;
-  mutable matrix4f cached_mvpv_ = matrix4f::identity();
+  mutable matrix4f mvpv_;
+  mutable matrix4f mv_;
+  mutable vector3f directional_light_cs_;
+  mutable vector3f point_light_cs_;
 
  private:
   virtual pipeline_counters draw_impl() const = 0;
