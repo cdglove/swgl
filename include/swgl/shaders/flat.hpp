@@ -10,6 +10,7 @@
 #define SWGL_SHADERS_FLAT_HPP
 #pragma once
 
+#include "swgl/pipeline.hpp"
 #include "swgl/shaders/basic_lighted_model.hpp"
 
 namespace swgl { namespace shaders {
@@ -18,22 +19,6 @@ class flat : public pipeline<flat, basic_lighted_model> {
  public:
   void set_albedo(image const& texture) {
     albedo_ = &texture;
-  }
-
-  void set_view(matrix4f m) {
-    view_ = m;
-  }
-
-  void set_projection(matrix4f m) {
-    projection_ = m;
-  }
-
-  void set_viewport(matrix4f m) {
-    viewport_ = m;
-  }
-
-  void set_view_matrix(matrix4f m) {
-    model_mat_ = m;
   }
 
  private:
@@ -57,8 +42,7 @@ class flat : public pipeline<flat, basic_lighted_model> {
     }
   };
 
-  using base = pipeline<flat, basic_lighted_model>;
-  friend class base;
+  friend class pipeline<flat, basic_lighted_model>;
 
   vertex_out shade_vertex(std::size_t face, std::size_t idx) const {
     auto& model = get_model();
@@ -70,13 +54,12 @@ class flat : public pipeline<flat, basic_lighted_model> {
 
     // Compute directional light.
     auto normal = cross(
-        (model.position(face, 2) - model.position(face, 0)),
-        (model.position(face, 1) - model.position(face, 0)));
+        (model.position(face, 1) - model.position(face, 0)),
+        (model.position(face, 2) - model.position(face, 0)));
     normal.normalize();
     normal.normalize();
 
-    vector3f light_dir(0, 0, -1);
-    float intensity = dot(normal, light_dir);
+    float intensity = dot(normal, draw_info_->directional_light);
     intensity       = std::max(0.f, intensity);
 
     // Add some Ambient
@@ -95,10 +78,6 @@ class flat : public pipeline<flat, basic_lighted_model> {
   }
 
   image const* albedo_ = nullptr;
-  matrix4f projection_ = matrix4f::identity();
-  matrix4f view_       = matrix4f::identity();
-  matrix4f viewport_   = matrix4f::identity();
-  matrix4f model_mat_  = matrix4f::identity();
 };
 
 }} // namespace swgl::shaders

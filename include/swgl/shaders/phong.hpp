@@ -11,6 +11,7 @@
 #pragma once
 
 #include "swgl/algorithm.hpp"
+#include "swgl/pipeline.hpp"
 #include "swgl/shaders/basic_lighted_model.hpp"
 
 namespace swgl { namespace shaders {
@@ -46,8 +47,7 @@ class phong : public pipeline<phong, basic_lighted_model> {
     return neg_light_dir - (2.f * (dot(normal, neg_light_dir) * normal));
   }
 
-  using base = pipeline<phong, basic_lighted_model>;
-  friend class base;
+  friend class pipeline<phong, basic_lighted_model>;
 
   vertex_out shade_vertex(std::size_t face, std::size_t idx) const {
     auto& model = get_model();
@@ -62,15 +62,15 @@ class phong : public pipeline<phong, basic_lighted_model> {
   }
 
   colour<float> shade_fragment(vertex_out const& in) const {
-    vector3f light_dir(0, 0, 1.f);
-    float n_dot_l = dot(in.normal, light_dir);
-    n_dot_l       = std::max(0.f, n_dot_l);
+    vector3f light_dir = draw_info_->directional_light;
+    float n_dot_l      = dot(in.normal, light_dir);
+    n_dot_l            = std::max(0.f, n_dot_l);
 
     float phong = 0.f;
     if(n_dot_l > 0.f) {
-      vector3f view      = -in.position.normal();
-      vector3f ref = reflect(-light_dir, in.normal);
-          
+      vector3f view = -in.position.normal();
+      vector3f ref  = reflect(-light_dir, in.normal);
+
       float phong = dot(view, ref);
       phong       = clamp(phong, 0.f, 1.f);
       phong       = pow(phong, 16.f);

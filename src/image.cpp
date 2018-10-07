@@ -15,6 +15,7 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#include <cstring>
 
 #pragma pack(push, 1)
 struct TGA_Header {

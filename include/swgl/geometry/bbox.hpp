@@ -11,6 +11,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 
 namespace swgl {
 
@@ -54,7 +55,7 @@ class bbox {
 
   bbox(dimension_type min, dimension_type max) {
     for(std::size_t i = 0; i < Dimension; ++i) {
-      assert(first[i] <= second[i]);
+      assert(min[i] <= max[i]);
     }
 
 	min_ = min;

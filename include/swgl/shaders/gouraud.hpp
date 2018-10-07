@@ -41,8 +41,7 @@ class gouraud : public pipeline<gouraud, basic_lighted_model> {
     }
   };
 
-  using base = pipeline<gouraud, basic_lighted_model>;
-  friend class base;
+  friend class pipeline<gouraud, basic_lighted_model>;
 
   vertex_out shade_vertex(std::size_t face, std::size_t idx) const {
     auto& model = get_model();
@@ -53,7 +52,7 @@ class gouraud : public pipeline<gouraud, basic_lighted_model> {
     out.uv       = model.uv(face, idx);
 
     vector3f light_dir(0, 0, 1);
-    float intensity = dot(model.normal(face, idx), light_dir);
+    float intensity = dot(model.normal(face, idx), draw_info_->directional_light);
     intensity       = std::max(0.f, intensity);
 
     // Add some Ambient

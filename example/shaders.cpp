@@ -139,12 +139,9 @@ class application {
 
     while(!glfwWindowShouldClose(window_)) {
       clear_frame();
-
+      fill_draw_data(draw_data);
       swgl::shaders::basic_lighted_model const* shader =
           shaders_[options_.shader];
-
-      draw_data.projection = get_projection();
-      draw_data.view       = get_view();
 
       swgl::pipeline_counters frame_counters;
       frame_counters += shader->draw(draw_data);
@@ -166,6 +163,17 @@ class application {
       GLFWwindow* window, float scalew, float scaleh) {
     reinterpret_cast<application*>(glfwGetWindowUserPointer(window))
         ->handle_window_contents_scale_changed(scalew, scaleh);
+  }
+
+  static swgl::vector3f polar_to_3d(float theta, float phi, float rad) {
+    swgl::vector3f ret;
+    float ctp = theta * 3.1415f * 2;
+    float cpp = phi * 3.1415f * 2;
+
+    ret.x = rad * std::sin(ctp) * std::cos(cpp);
+    ret.y = rad * std::sin(ctp) * std::sin(cpp);
+    ret.z = rad * std::cos(ctp);
+    return ret;
   }
 
   void init_window_manager() {
@@ -220,37 +228,44 @@ class application {
 
     // Options window
     {
+      ImGui::Begin("Options");
 
-      ImGui::Begin("Options"); // Create a window called "Hello, world!"
-                               // and append into it.
       ImGui::Combo(
           "Display Buffer", &options_.visualize_buffer, "Colour\0Depth\0\0");
       ImGui::Combo("Shader", &options_.shader, shader_names_);
 
       ImGui::Separator();
       ImGui::Text("Camera");
-      ImGui::SliderFloat("Distance", &camera_radius_, 0.25f, 5.f);
-      ImGui::SliderFloat("Rho", &camera_theta_, -1.f, 1.f);
-      ImGui::SliderFloat("Phi", &camera_phi_, -1.f, 1.f);
+      ImGui::SliderFloat("Distance", &camera_radius_, 0.2f, 5.f);
+      ImGui::SliderFloat2("CThetaPhi", camera_theta_phi_.raw.data(), -1.f, 1.f);
+
+      ImGui::Separator();
+      ImGui::Text("Light Direction");
+      ImGui::SliderFloat2("LThetaPhi", dir_light_theta_phi_.raw.data(), -1.f, 1.f);
 
       ImGui::ColorEdit3(
           "Clear Colour",
           options_.clear_colour.data()); // Edit 3 floats representing a color
+
+      ImGui::End();
     }
 
-    // Stats
-    if(ImGui::CollapsingHeader("Draw Stats")) {
-      ImGui::Indent();
+    // Stats window
+    {
+      ImGui::Begin("Draw Stats");
+
+      // if(ImGui::CollapsingHeader("Draw Stats")) {
+      //   ImGui::Indent();
       ImGui::Text("pixels = %d", frame_stats.pixel_count());
       ImGui::Text("triangles = %d", frame_stats.triangle_count());
       ImGui::Text("draws = %d", frame_stats.draw_count());
-      ImGui::Unindent();
-    }
+      // ImGui::Unindent();
 
-    ImGui::Text(
-        "Application average %.3f ms/frame (%.1f FPS)",
-        1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-    ImGui::End();
+      ImGui::Text(
+          "Application average %.3f ms/frame (%.1f FPS)",
+          1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+      ImGui::End();
+    }
 
     //    ImGui::ShowDemoWindow();
 
@@ -283,15 +298,23 @@ class application {
     std::fill(depth_.begin(), depth_.end(), -std::numeric_limits<float>::max());
   }
 
-  swgl::matrix4f get_view() const {
-    swgl::vector3f eye;
-    float ctp = camera_theta_ * 3.1415f * 2;
-    float cpp = camera_phi_ * 3.1415f * 2;
+  void fill_draw_data(
+      swgl::shaders::basic_lighted_model::draw_info& draw_data) {
+    draw_data.eye           = get_eye();
+    draw_data.projection    = get_projection();
+    draw_data.view          = get_view(draw_data.eye);
+    draw_data.ambient_light = 0.2f;
+    draw_data.directional_light =
+        polar_to_3d(dir_light_theta_phi_[0], dir_light_theta_phi_[1], 1.f);
+    draw_data.point_light = swgl::vector3f(0.f, 0.f, -5.f);
+  }
 
-    eye.x = camera_radius_ * std::sin(ctp) * std::cos(cpp);
-    eye.y = camera_radius_ * std::sin(ctp) * std::sin(cpp);
-    eye.z = camera_radius_ * std::cos(ctp);
+  swgl::vector3f get_eye() {
+    return polar_to_3d(
+        camera_theta_phi_[0], camera_theta_phi_[1], camera_radius_);
+  }
 
+  swgl::matrix4f get_view(swgl::vector3f const& eye) const {
     auto view = swgl::lookat(
         eye, swgl::vector3f::zero(), swgl::vector3f(0.f, 1.f, 0.f));
     view.set_column(3, view.get_column(3) * camera_radius_);
@@ -325,8 +348,8 @@ class application {
   float scalew_        = 1.f;
   float scaleh_        = 1.f;
   float camera_radius_ = 1.5f;
-  float camera_theta_  = 0.08f;
-  float camera_phi_    = 0.4f;
+  swgl::vector2f camera_theta_phi_{0.08f, 0.4f};
+  swgl::vector2f dir_light_theta_phi_;
   swgl::vector3f eye_;
   swgl::image rt_;
   swgl::matrix4f camera_ = swgl::matrix4f::identity();

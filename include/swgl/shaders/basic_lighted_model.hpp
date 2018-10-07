@@ -24,7 +24,9 @@ class basic_lighted_model {
     matrix4f projection;
     matrix4f viewport;
     vector3f eye;
-    vector3f pointlight;
+    vector3f point_light;
+    vector3f directional_light;
+    float    ambient_light;
   };
 
   pipeline_counters draw(draw_info const& info) const {

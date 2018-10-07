@@ -12,6 +12,8 @@
 
 #include "swgl/geometry/initialisers.hpp"
 #include <array>
+#include <cmath>
+#include <algorithm>
 
 namespace swgl {
 
@@ -190,7 +192,7 @@ class vector : public detail::vector_operators<T, Dimension> {
   }
 
   vector()
-      : vector(init::zero_t) {
+      : vector(init::zero) {
   }
 
   std::array<T, Dimension> raw;
