@@ -313,11 +313,11 @@ class application {
 
   void fill_draw_data(
       swgl::shaders::basic_lighted_model::draw_info& draw_data) {
-    draw_data.eye        = get_eye();
-    draw_data.projection = get_projection();
-    draw_data.view       = get_view(draw_data.eye);
-    draw_data.viewport = swgl::viewport_matrix(0, 0, rt_.width(), rt_.height());
+    draw_data.eye           = get_eye();
+    draw_data.projection    = get_projection();
+    draw_data.view          = get_view(draw_data.eye);
     draw_data.ambient_light = 0.2f;
+    draw_data.viewport = swgl::viewport_matrix(0, 0, rt_.width(), rt_.height());
     draw_data.directional_light =
         polar_to_3d(light_theta_phi_[0], light_theta_phi_[1], 1.f);
     draw_data.point_light =
