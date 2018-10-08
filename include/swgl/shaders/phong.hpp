@@ -61,7 +61,7 @@ class phong : public pipeline<phong, basic_lighted_model> {
     out.cam_pos   = vector_narrow<3>(mv_ * vertex_position);
     out.position  = vector_narrow<3>(proj) / proj.w;
     out.uv        = model.uv(face, idx);
-    out.normal    = model.normal(face, idx);
+    out.normal    = vector_narrow<3>(mv_ * vector_widen<4>(model.normal(face, idx), 1.f));
     return out;
   }
 

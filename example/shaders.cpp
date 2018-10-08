@@ -22,6 +22,7 @@
 #include <GLFW/glfw3.h>
 
 #include <algorithm>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -134,11 +135,10 @@ class application {
     p.set_albedo(diffuse);
 
     swgl::shaders::basic_lighted_model::draw_info draw_data;
-    draw_data.model    = swgl::matrix4f::identity();
-    draw_data.viewport = swgl::viewport_matrix(0, 0, rt_.width(), rt_.height());
 
     while(!glfwWindowShouldClose(window_)) {
       clear_frame();
+      update();
       fill_draw_data(draw_data);
       swgl::shaders::basic_lighted_model const* shader =
           shaders_[options_.shader];
@@ -233,6 +233,7 @@ class application {
       ImGui::Combo(
           "Display Buffer", &options_.visualize_buffer, "Colour\0Depth\0\0");
       ImGui::Combo("Shader", &options_.shader, shader_names_);
+      ImGui::Checkbox("Rotate", &options_.auto_rotate);
 
       ImGui::Separator();
       ImGui::Text("Camera");
@@ -258,7 +259,7 @@ class application {
       ImGui::Text("pixels = %d", frame_stats.pixel_count());
       ImGui::Text("triangles = %d", frame_stats.triangle_count());
       ImGui::Text("draws = %d", frame_stats.draw_count());
-     
+
       ImGui::Text(
           "Application average %.3f ms/frame (%.1f FPS)",
           1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
@@ -296,16 +297,33 @@ class application {
     std::fill(depth_.begin(), depth_.end(), -std::numeric_limits<float>::max());
   }
 
+  void update() {
+    if(options_.auto_rotate) {
+      auto time        = std::chrono::steady_clock::now().time_since_epoch();
+      swgl::vector3f x = polar_to_3d(
+          std::chrono::duration<float>(time).count() * 0.1f, 0.f, 1.f);
+      swgl::vector3f z = cross(x, swgl::vector3f(0.f, 1.f, 0.f));
+      swgl::matrix4f m(swgl::init::identity);
+      m.set_row(0, swgl::vector_widen<4>(x, 0.f));
+      m.set_row(1, swgl::vector4f(0.f, 1.f, 0.f, 0.f));
+      m.set_row(2, swgl::vector_widen<4>(z, 0.f));
+      model_ = m;
+    }
+  }
+
   void fill_draw_data(
       swgl::shaders::basic_lighted_model::draw_info& draw_data) {
-    draw_data.eye           = get_eye();
-    draw_data.projection    = get_projection();
-    draw_data.view          = get_view(draw_data.eye);
+    draw_data.eye        = get_eye();
+    draw_data.projection = get_projection();
+    draw_data.view       = get_view(draw_data.eye);
+    draw_data.viewport = swgl::viewport_matrix(0, 0, rt_.width(), rt_.height());
     draw_data.ambient_light = 0.2f;
     draw_data.directional_light =
         polar_to_3d(light_theta_phi_[0], light_theta_phi_[1], 1.f);
     draw_data.point_light =
         -polar_to_3d(light_theta_phi_[0], light_theta_phi_[1], light_distance_);
+
+    draw_data.model = model_;
   }
 
   swgl::vector3f get_eye() {
@@ -353,6 +371,7 @@ class application {
   swgl::vector3f eye_;
   swgl::image rt_;
   swgl::matrix4f camera_ = swgl::matrix4f::identity();
+  swgl::matrix4f model_  = swgl::matrix4f::identity();
   std::vector<float> depth_;
   char const* shader_names_ = nullptr;
   std::vector<swgl::shaders::basic_lighted_model*> shaders_;
@@ -362,6 +381,7 @@ class application {
     swgl::colour<float> clear_colour{0, 0, 0, 1};
     int visualize_buffer = 0;
     int shader           = 0;
+    bool auto_rotate     = true;
   } options_;
 };
 
