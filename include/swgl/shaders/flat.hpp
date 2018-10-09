@@ -47,10 +47,9 @@ class flat : public pipeline<flat, basic_lighted_model> {
   vertex_out shade_vertex(std::size_t face, std::size_t idx) const {
     auto& model = get_model();
     vertex_out out;
-    vector4f proj =
-        cached_mvpv_ * vector_widen<4>(model.position(face, idx), 1.f);
-    out.position = vector_narrow<3>(proj) / proj.w;
-    out.uv       = model.uv(face, idx);
+    vector4f proj = mvpv_ * vector_widen<4>(model.position(face, idx), 1.f);
+    out.position  = vector_narrow<3>(proj) / proj.w;
+    out.uv        = model.uv(face, idx);
 
     // Compute directional light.
     auto normal = cross(
@@ -59,7 +58,7 @@ class flat : public pipeline<flat, basic_lighted_model> {
     normal.normalize();
     normal.normalize();
 
-    float intensity = dot(normal, draw_info_->directional_light);
+    float intensity = dot(normal, directional_light_cs_);
     intensity       = std::max(0.f, intensity);
 
     // Add some Ambient
