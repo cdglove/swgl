@@ -109,6 +109,14 @@ class matrix {
     }
   }
 
+  T* data() {
+    return raw.data();
+  }
+
+  T const* data() const {
+    return raw.data();
+  }
+
   static matrix identity() {
     return {init::identity};
   }

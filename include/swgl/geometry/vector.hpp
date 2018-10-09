@@ -11,9 +11,9 @@
 #pragma once
 
 #include "swgl/geometry/initialisers.hpp"
+#include <algorithm>
 #include <array>
 #include <cmath>
-#include <algorithm>
 
 namespace swgl {
 
@@ -154,6 +154,14 @@ class vector_operators {
 
   T length_sq() const {
     return dot(derived(), derived());
+  }
+
+  T* data() {
+    return derived().raw.data();
+  }
+
+  T const* data() const {
+    return derived().raw.data();
   }
 
   static derived_type zero() {
