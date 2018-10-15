@@ -376,16 +376,16 @@ class application {
 
     // Draw Manipulators
     {
-      float fov         = 27.f;
+      float fov = 27.f;
 
-      auto eye = get_eye();
+      auto eye  = get_eye();
       auto view = get_view(eye);
-      static std::array<float, 16> cameraView{1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f,
-                                       0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f};
+      auto proj = get_projection();
+      proj.transpose();
 
       static std::array<float, 16> objectMatrix = {1.f, 0.f, 0.f, 0.f, 0.f, 1.f,
-                                            0.f, 0.f, 0.f, 0.f, 1.f, 0.f,
-                                            0.f, 0.f, 0.f, 1.f};
+                                                   0.f, 0.f, 0.f, 0.f, 1.f, 0.f,
+                                                   0.f, 0.f, 0.f, 1.f};
 
       static const std::array<float, 16> identityMatrix = {
           1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f,
@@ -398,18 +398,18 @@ class application {
           fov, io.DisplaySize.x / io.DisplaySize.y, 0.1f, 100.f,
           cameraProjection.data());
 
-      float at[]  = {0.f, 0.f, 0.f};
-      float up[]  = {0.f, 1.f, 0.f};
-      view.transpose();
-      LookAt(eye.data(), at, up, cameraView.data());
-
+      float at[] = {0.f, 0.f, 0.f};
+      float up[] = {0.f, 1.f, 0.f};
+      swgl::matrix4f view2;
+      LookAt(eye.data(), at, up, view2.data());
+      
       ImGuizmo::DrawCube(
-          cameraView.data(), cameraProjection.data(), objectMatrix.data());
+          view2.data(), cameraProjection.data(), objectMatrix.data());
       ImGuizmo::DrawGrid(
-          cameraView.data(), cameraProjection.data(), identityMatrix.data(),
+          view2.data(), cameraProjection.data(), identityMatrix.data(),
           10.f);
       EditTransform(
-          cameraView.data(), cameraProjection.data(), objectMatrix.data());
+          view2.data(), cameraProjection.data(), objectMatrix.data());
       // o1.transpose();
     }
 
